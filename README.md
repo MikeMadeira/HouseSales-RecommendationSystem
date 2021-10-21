@@ -1,7 +1,5 @@
 # HouseSales-RecommendationSystem
 
-# HouseSales-RecommendationSystem
-
 This project is a recommendation system for Real Estate companies based on insights from exploratory data analysis.
 
 1. Business Understanding
