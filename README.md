@@ -2,16 +2,16 @@
 
 This project is a recommendation system for Real Estate companies based on insights from exploratory data analysis.
 
-1. Business Understanding
+1. **Business Understanding**
     
     Domain: Real Estate
     
     Business: Buy houses for a price value and Sell them for a higher price 
     
-2. Business Problems (presented by business experts)
+2. **Business Problems (presented by business experts)**
     1. Which houses should be bought and for what price?
     2. Once its bought when it's the best time period to sell it and for what price?
-3. Solution Proposal
+3. **Solution Proposal**
     
     
     1. Build a table with house recommendations to buy or not to buy.
@@ -99,7 +99,7 @@ This project is a recommendation system for Real Estate companies based on insig
         - Same as previous one but now adding the number of bedrooms and sqft_lot to the seasonal aggregation to calculate a median for houses with the same characteristics.
         - And the percentage of the median selling price will be based on the YoY (Year over Year) variation. If its positive plus 10%, much higher than previous years plus 20%, etc.
     
-    3. Create visualizations to answer to each one of the 10 business hypothesis (made by Data Scientists).
+    3. **Create visualizations to answer to each one of the 10 business hypothesis (made by Data Scientists).**
     
     - H1: Houses that have a water view, are 20% more expensive on average.
     - H2: Houses with year built older than 1955, are 50% cheaper on average.
@@ -108,7 +108,7 @@ This project is a recommendation system for Real Estate companies based on insig
     - H5: Houses with 3 bathrooms have a MoM (Month over Month) growth of 15%.
     - H6:
     
-    4. Provide an interactive and web accessible Dashboard with the business problems answered and the information to evaluate the proposed hypothesis and extract insights.
+    4. **Provide an interactive and web accessible Dashboard with the business problems answered and the information to evaluate the proposed hypothesis and extract insights.**
     
     1. Final deliverables:
         1. An URL for the access to the dashboard, where the business insights and results will appear.
@@ -119,12 +119,12 @@ This project is a recommendation system for Real Estate companies based on insig
     3. Tasks process:
         1. Create Procfile, setup.sh, requirements.txt etc.
         
-4. Presentation of the 5 main insights (answering some expert questions and other hypothesis)
+4. **Presentation of the 5 main insights (answering some expert questions and other hypothesis)**
     1. Insights visualization and interpretation
     
-5. Business Results
+5. **Business Results**
     1. Actionable solutions 
     2. Business metrics comparison between old and newer actions.
-6. Conclusion
+6. **Conclusion**
     1. Was the initial goal achieved?
-7. Next actionable steps
+7. **Next actionable steps**
