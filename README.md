@@ -101,23 +101,23 @@ This project is a recommendation system for Real Estate companies based on insig
     
     3. **Create visualizations to answer to each one of the 10 business hypothesis (made by Data Scientists).**
     
-    - H1: Houses that have a water view, are 20% more expensive on average.
-    - H2: Houses with year built older than 1955, are 50% cheaper on average.
-    - H3: Houses without basement are 40% bigger than with basement.
-    - H4: The growth rate of the houses price YoY (Year over Year) is 10%.
-    - H5: Houses with 3 bathrooms have a MoM (Month over Month) growth of 15%.
-    - H6:
+        - H1: Houses that have a water view, are 20% more expensive on average.
+        - H2: Houses with year built older than 1955, are 50% cheaper on average.
+        - H3: Houses without basement are 40% bigger than with basement.
+        - H4: The growth rate of the houses price YoY (Year over Year) is 10%.
+        - H5: Houses with 3 bathrooms have a MoM (Month over Month) growth of 15%.
+        - H6:
     
     4. **Provide an interactive and web accessible Dashboard with the business problems answered and the information to evaluate the proposed hypothesis and extract insights.**
     
-    1. Final deliverables:
-        1. An URL for the access to the dashboard, where the business insights and results will appear.
-    2.  Expected Tools:
-        1. Pycharm
-        2. Streamlit
-        3. Heroku
-    3. Tasks process:
-        1. Create Procfile, setup.sh, requirements.txt etc.
+        1. Final deliverables:
+            1. An URL for the access to the dashboard, where the business insights and results will appear.
+        2.  Expected Tools:
+            1. Pycharm
+            2. Streamlit
+            3. Heroku
+        3. Tasks process:
+            1. Create Procfile, setup.sh, requirements.txt etc.
         
 4. **Presentation of the 5 main insights (answering some expert questions and other hypothesis)**
     1. Insights visualization and interpretation
