@@ -26,20 +26,30 @@ def set_axes(xvalues: list, ax: plt.Axes = None, title: str = '', xlabel: str = 
 
     return ax
 
-def set_locators(xvalues: list, hist_values: tuple, ax: plt.Axes = None):
-    if isinstance(xvalues[0], dt.datetime):
-        locator = mdates.AutoDateLocator()
-        ax.xaxis.set_major_locator(locator)
-        ax.xaxis.set_major_formatter(mdates.AutoDateFormatter(locator, defaultfmt='%Y-%m-%d'))
-    else:
-        #ax.set_xticks(xvalues)
-        #ax.set_xlim(xvalues[0], xvalues[-1])
-        # this median is for distributions that present a very extreme and very different probability
-        # compared to the others
-        ax.set_ylim(0, np.max(hist_values[0])+((np.max(hist_values[0])-np.median(hist_values[0])))/2)
-        #pass
+def save(dirname: str, chartname: str, index: str = ''):
+    plt.savefig(dirname + chartname + index)
+    
 
-    return ax
+##### Scatter plots #####
+def multiple_scatter_plots(data: pd.DataFrame):
+    rows, cols = len(data.columns)-1, len(data.columns)-1
+    fig, axs = plt.subplots(rows, cols, figsize=(cols*4,rows*4), squeeze=False)
+    
+    plt.subplots_adjust(wspace=0.9,hspace=0.9)
+    
+    columns = data.columns
+    for i in range(len(data.columns)):
+        var1 = data[columns[i]]
+        for j in range(i+1,len(data.columns)):
+            var2 = data[columns[j]]
+            axs[i,j-1].set_title(f"{columns[i]} x {columns[j]}")
+            axs[i,j-1].scatter(var1,var2)
+            axs[i,j-1].set_xlabel(columns[i])
+            axs[i,j-1].set_ylabel(columns[j])
+            
+    
+    
+##### Distributions plots #####
 
 def multiple_line_chart(xvalues: list, yvalues: dict, hist_values: tuple, ax: plt.Axes = None, title: str = '',
                         xlabel: str = '', ylabel: str = '', percentage=False):
@@ -53,8 +63,7 @@ def multiple_line_chart(xvalues: list, yvalues: dict, hist_values: tuple, ax: pl
     ax.legend(legend)
     plt.tight_layout()
 
-def save(dirname: str, chartname: str, index: str = ''):
-    plt.savefig(dirname + chartname + index)
+
 
 def iterate_through_data(data: pd.DataFrame, features_names: pd.Index, rows: int, cols: int):
     height = 4
@@ -80,6 +89,21 @@ def iterate_through_data(data: pd.DataFrame, features_names: pd.Index, rows: int
             i, j = (i + 1, 0) if (n + 1) % cols == 0 else (i, j + 1)
             n+=1
     save('charts/eda_charts/','numeric_distributions')
+    
+def set_locators(xvalues: list, hist_values: tuple, ax: plt.Axes = None):
+    if isinstance(xvalues[0], dt.datetime):
+        locator = mdates.AutoDateLocator()
+        ax.xaxis.set_major_locator(locator)
+        ax.xaxis.set_major_formatter(mdates.AutoDateFormatter(locator, defaultfmt='%Y-%m-%d'))
+    else:
+        #ax.set_xticks(xvalues)
+        #ax.set_xlim(xvalues[0], xvalues[-1])
+        # this median is for distributions that present a very extreme and very different probability
+        # compared to the others
+        ax.set_ylim(0, np.max(hist_values[0])+((np.max(hist_values[0])-np.median(hist_values[0])))/2)
+        #pass
+
+    return ax
     
 def compute_known_distributions(x_values: list) -> dict:
     distributions = {}
@@ -130,7 +154,7 @@ def identify_best_fit_distribution(df, feature):
 
 
         # Get expected counts in percentile bins
-        # cdf of fitted sistrinution across bins
+        # cdf of fitted distribution across bins
         cdf_fitted = dist.cdf(percentile_cutoffs, *param)
         expected_frequency = []
         for bin in range(len(percentile_bins)-1):
