@@ -2,9 +2,9 @@
 
 <img src="images/real_estate_project_2.jpg" style="width:850px ; height:600px">
 
-This project is a recommendation system for Real Estate companies based on insights extracted from exploratory data analysis, to answer to real estate common business questions. The rationale and the development can be followed on my jupyter ![Notebook](houses_recommendations.ipynb) and also visualize dashboards on a more centralized and interactive way through my [Real Estate Recommendation Report App](url). 
+This project is a recommendation system for Real Estate companies based on insights extracted from exploratory data analysis, to answer to real estate common business questions. The rationale and the development can be followed on my jupyter [Notebook](houses_recommendations.ipynb) and also visualize dashboards on a more centralized and interactive way through my [Real Estate Recommendation Report App](url). 
 
-The analysis was done over some data of sold houses from King County, in Seattle, USA. The data was obtained from [Kaggle](https://www.kaggle.com/harlfoxem/housesalesprediction)
+The analysis was done over some data of sold houses from King County, in Seattle, USA. The data was obtained from [Kaggle](https://www.kaggle.com/harlfoxem/housesalesprediction).
 
 
 ## 1. **Business Understanding**
