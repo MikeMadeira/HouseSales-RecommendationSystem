@@ -1,10 +1,10 @@
 # Real Estate Investment Recommendation System
 
-<img src="images/real_estate_project_2.jpg" style="width:900px ; height:700px">
+<img src="images/real_estate_project_2.jpg" style="width:850px ; height:600px">
 
-This project is a recommendation system for Real Estate companies based on insights from exploratory data analysis, where they can visualize customized dashboards to explore the real estate portfolio, with some statistics and interactive maps. 
+This project is a recommendation system for Real Estate companies based on insights extracted from exploratory data analysis, to answer to real estate common business questions. The rationale and the development can be followed on my jupyter ![Notebook](houses_recommendations.ipynb) and also visualize dashboards on a more centralized and interactive way through my [Real Estate Recommendation Report App](url). 
 
-The analysis was done over some data on sold houses from King County, in Washighton, USA. The data was obtained from [Kaggle](https://www.kaggle.com/harlfoxem/housesalesprediction)
+The analysis was done over some data of sold houses from King County, in Seattle, USA. The data was obtained from [Kaggle](https://www.kaggle.com/harlfoxem/housesalesprediction)
 
 
 ## 1. **Business Understanding**
@@ -13,21 +13,23 @@ Domain: Real Estate.
 
 Business Model: Buy houses for a price value and sell them for a higher price to make profit.
     
-    
+---    
 ## 2. **Business Problems (ficticious problems presented by business experts)**
 1. Which houses should be bought and for what price?
 2. Once its bought when it's the best time period to sell it and for what price?
 3. To rise the housing selling price, the company should do a renovation. So what would be good renewal changes?
 
-
+---
 ## 3. **Solution Strategy**
 
 **Step 1. Data Attributes Description**
 
+<details><summary>The original variables are:</summary><br>
+    
 |***Attribute*** | ***Description*** |
 | -------- | --------- |
 |**id** | a unique identifier number for each unique house |
-|**date** | the date when the house were sold |
+|**date** | the date when the house was sold |
 |**price** | the selling price when the house was sold |
 |**bedrooms** | number of bedrooms in the house |
 |**bathrooms** | number of bathrooms in the house, where a fraction like 0.25 represents a bathroom sink, shower or toilet |
@@ -48,11 +50,13 @@ Business Model: Buy houses for a price value and sell them for a higher price to
 |**sqft_livining15** | The square footage of interior housing living space for the nearest 15 neighbors (possibly) | 
 |**sqft_lot15**| The square footage of the land lots of the nearest 15 neighbors | 
 
+</details>
 
 **Step 2. Descriptive Statistics Analysis:**
 
 Analyzed each of the columns providing descriptive metrics for each attribute, obtaining a table with a statistical summary of the dataframe.
 
+Housing price is varying from 75 000.00$ to 7 700 000.00$ which reveals a wide range of values. By looking to median price, 50% of the houses on King County costs equal or less than 450 000.00$, and comparing to the mean value, 540 088.14$, I can assume that are houses with much higher prices pushing the mean far from the median, so the distribution is skewed right with a skew of 4.02. In terms of more price concentration of houses, by looking at kurtosis there are many houses around the mode of 350 000.00$. Since it is right skewed the most interesting extreme values are to the left, and 75% of the houses price value are equal or below 645 000.00$, and 94.70% of the houses are up to 1 129 575.00$, there being 1146 houses above this value that could be statistically considered outliers.
 
 **Step 3. Defined Business Data Assumptions:**
 
@@ -62,7 +66,7 @@ Analyzed each of the columns providing descriptive metrics for each attribute, o
 
 - Bedrooms inconsistency
 
-    Houses with 0 bedrooms, may be for other purposes apart from living usage. (Confirm all records consistency, analysing one by one or                     doing some summary statistics)
+    Houses with 0 bedrooms, may be for other purposes apart from living usage.
 
 - Year Renovated inconsistency
 
@@ -72,49 +76,39 @@ Analyzed each of the columns providing descriptive metrics for each attribute, o
 
     The condition variable it seems to have a higher weight in long-term than grade, in terms of evaluating which houses are better to buy,                   since the grade is the infraestructure construction quality and it cannot change so much with time, unlike condition that is the house                   preservation and it can it can increase with some maintenance works. 
                 
-    2. Useful Attributes for business question:
+- Useful Attributes for business question:
 
-        1. date, price, condition, grade, zipcode, plus:
-            1. median_price - based on zipcode region of the selected houses
-            2. percentage_value_below_median
-            3. house_total_m2 - m2_living + m2_lot (converted sqft to m2)
-            4. price/house_total_m2 - will help more obtaining more informative insights on comparisons, since we are normalizing the 
-            price by the house size, and then there is a more fair comparison.
-            5. house_type - will help to separate houses based on its property total size, and this way having a first aggregation level by zipcode and then by house_type 
-        2. From the selected houses to buy create and use:
-            1. best_season - based on zipcode region of the selected houses, and its selling date
-            2. selling_price - based on the price and the season
-            3. profit - will result from difference between selling_price and price 
-
-        The price per m² is being calculated based on the total property size that is living plus lot size, but some records may record the lot size             of a condominium and its only a condominium unit, and the price paid is relative to living size only, but for a farmhouse the price should               consider the lot size as well.
-
-        We could identify what kind of property it is, like a:
-
-        - condominium unit or an apartment unit
-
-        - townhouse
-
-        - houses that share walls with other houses
-
-        - single-family residence
-
-        - multi-family residence
-
-        - mansion
-
-        - farmhouse
-
-        But it is difficult to find specific characteristics just looking for this data, without some rules of thumb or some clustering algorithm.
-
-        So to not make more compromising assumptions, we can get two categorical features that would range from small living size to big, and small               lot size to big.
-
-        Then each house will be aggregated not only by zipcode but by living_size and lot_size, to calculate a more fair price/m² median.
-
-    It is important to do some business data assumption to better analyze the data and take interpretable insights.
-
-**Step 4. Implementing some data transformation according to business assumptions and useful attributes and dericed ones.**
+    To calculate a more fair median price, each house will be aggregated not only by zipcode but by living_size and lot_size, to calculate a more fair median price.
 
 
+**Step 4. Data transformation according to business assumptions and feature engineering based on useful attributes and derived ones.**
+
+<details><summary>The new and derived variables are:</summary><br>
+    
+|***Attribute*** | ***Description*** |
+| -------- | --------- |
+|**m2_living** | squared meters of the apartments interior living space |
+|**m2_lot** | the size of the land in squared meters |
+|**house_total_m2** | the sum of m2_living and m2_lot |
+|**price/m2** | the price normalized by the total house size |
+|**living_size** | the categorical size of the living part of the house which could be a small_house, medium_house or a large_house |
+|**lot_size** | the categorical size of the land which could be a small_terrain, medium_terrain or a large_terrain |
+|**median_price** | resulting from aggregating all houses by ['zipcode','living_size','lot_size'] |
+|**median_price/m2** | calculating its median price per m2 per region per living size and per lot size | 
+|**status** | a auxiliar variable to label what houses to buy, to consider buying, to compare and not worth buying | 
+|**perc_value_below_median_price** | a percentage of how below the acquiring price is from the median_price | 
+|**season** | the season within the four seasons in which the house was sold | 
+|**best_season_median_price** | the median_price per m2 per region, living size, lot size and per season | 
+|**best_season** | the season within the four seasons in which got the best median_price and it is potential to sell |
+|**selling_price** | the selling price estimated with empirical rules taking into account the perc_value_below_median_price and the condition | 
+|**best_season_selling_price** | the selling price based estimated with empirical rules taking also into account the season | 
+|**profit** | the profit taken from acquiring a recommended house for a price and selling by the selling_price | 
+|**best_season_profit_est** | the profit taken from acquiring a recommended house for a price and selling by the best_season_selling_price | 
+
+</details>
+<br>
+
+---
 ## 4. **Recommendation Report to answer business experts**
     
 ### **1. Which houses should be bought and for what price?** 
@@ -123,9 +117,9 @@ The recommendation solution will output houses to buy and not to buy based on th
 
 So, it is better to use a metric like median price of the aggregation with the finer granularity of the property size, to do a fair evaluation of the real estate or the property size appreciation for each region, that then can be influenced by other variables like the mobility access of that region, and what offers there are in terms of market and public spaces. 
 
-Denoting that this decision making process will be based on the infraestructure construction area and its locatization that are the aspects of the house that would be less probable to be changed over time, unlike some maintenance or renovation works to preserve the house which could be done to improve and increase that property pricing evaluation. 
+Denoting that this decision making process will be based on the infraestructure construction area and its locatization that are the aspects of the house that would be less probable to be changed over time, unlike some maintenance or renovation works to preserve the house which could be done to improve and increase that property pricing appreciation. 
 
-The price value will be used to calculate the profit, from the difference with the selling price obtained through an increase on appreciation of the last selling price, from always suffering some market inflation, because the works expenses always increase each year and consequently other services, and the house value itself as a valuable asset, from the possible increase with market appreciation considering a higher house demand and less offering effect, and of course some renovation works.
+The price value will be used to calculate the profit, from the difference with the selling price obtained through an increase on appreciation of the last selling price, that could have suffered from market inflation, because the works expenses always increase each year and consequently other services, and the house value itself as a valuable asset, from the possible increase with market appreciation considering a higher house demand and less offering effect, and of course some renovation works.
 
 The decision to buy the houses is fundamentally based on the potential profit based on the expenses and the potential margin to increase the selling price value. The houses not considered to buy, can have different evaluation afterwards.
 
@@ -196,7 +190,7 @@ Labelling Distribution:
 | to buy              | 3560     |
 
 
-### **2. Which houses should be bought and for what price?**
+### **2. Once its bought when it's the best time period to sell it and for what price?**
 
 After having a value appreciation on the previous conditions based on real estate natural appreciation and some renewal works, the selling price can also suffer from other appreciation by taking into account the best season in which the houses on the same category were sold for a higher value.
 
@@ -223,7 +217,7 @@ Here is an example of what is the best season and best season median price for e
     
 For example, on the zipcode 98005, the houses to compare, that were the ones above the median price and their condition were higher than 3, have more bathroom amenities on general, and also for properties with living and lot large and medium size.
       
-      
+---      
 ## 5. **Business Results**
 
 There are **3 investment yield profit scenarios**, for some fix and flip or only market appreciation with time, according to some criteria:
@@ -244,7 +238,7 @@ There are **3 investment yield profit scenarios**, for some fix and flip or only
 
 Hence the sum of the median profit for the top 5 zip codes totals 778,443.75$ with an initial investment of 4,750,000.0$ and a sales revenue of 5,565,827.40$  
 
-
+---
 ## 6. **Conclusion**
 
 This project is a Data Analysis which was tailored to find actionable insights and therefore solutions to the real estate business experts specific problems.
@@ -254,10 +248,15 @@ From the profits I can conclude that there is margin of investment within King C
 To make the report easy and interactive I built an app to run on a cloud application, which can accessed by clicking on
 [Real Estate Recommendation Report App](url). Additionally it can be found some dashboards with interactive visualization graphs and maps. 
     
-    
+---    
 ## 7. **Next actionable steps**
 
+1. Use the normalized variables of price/m2 and median_price/m2
+2. Do another EDA cycle to take more insights
+3. Define the selling prices based on more data insights
+4. Recommended houses based on a score
 
+---
 ## 8. Author
    Michael Madeira
 
