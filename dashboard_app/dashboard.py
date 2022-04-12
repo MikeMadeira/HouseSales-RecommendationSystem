@@ -16,7 +16,7 @@ import plotly.express as px
 def main():
     
     status = 'initial_page'
-    new_status = set_page(status)
+    new_status = set_page_header(status)
     
     if new_status == 'macro_analysis':
         # Extract Data
@@ -60,7 +60,7 @@ def main():
     set_page_footer()
     
     
-def set_page(status):
+def set_page_header(status):
     
     # Visualization Setup
     st.set_page_config(page_title='RE Invest', page_icon='re_icon.jpeg',
