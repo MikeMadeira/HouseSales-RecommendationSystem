@@ -1,10 +1,11 @@
-![HouseSales-RecommendationSystem/images](real_estate_project_2.jpg) 
-
+<img src="images/real_estate_project_2.jpg" style="width:900px ; height:700px">
+    
 # Real Estate Investment Recommendation System
 
 This project is a recommendation system for Real Estate companies based on insights from exploratory data analysis, where they can visualize customized dashboards to explore the real estate portfolio, with some statistics and interactive maps. 
 
 The analysis was done over some data on sold houses from King County, in Washighton, USA. The data was obtained from [Kaggle](https://www.kaggle.com/harlfoxem/housesalesprediction)
+
 
 ## 1. **Business Understanding**
     
@@ -12,16 +13,48 @@ Domain: Real Estate.
 
 Business Model: Buy houses for a price value and sell them for a higher price to make profit.
     
+    
 ## 2. **Business Problems (ficticious problems presented by business experts)**
 1. Which houses should be bought and for what price?
 2. Once its bought when it's the best time period to sell it and for what price?
 3. To rise the housing selling price, the company should do a renovation. So what would be good renewal changes?
 
+
 ## 3. **Solution Strategy**
 
-**1. Descriptive Analysis: Analyzed each of the columns providing descriptive metrics for each attribute, obtaining a table with a statistical summary of the dataframe.**
+**Step 1. Data Attributes Description**
 
-1. Defined Business Data Assumptions:
+|***Attribute*** | ***Description*** |
+| -------- | --------- |
+|**id** | a unique identifier number for each unique house |
+|**date** | the date when the house were sold |
+|**price** | the selling price when the house was sold |
+|**bedrooms** | number of bedrooms in the house |
+|**bathrooms** | number of bathrooms in the house, where a fraction like 0.25 represents a bathroom sink, shower or toilet |
+|**sqft_living** | square footage of the apartments interior living space |
+|**sqft_lot** | the size of the land in square feet |
+|**floors** | number of floors in the house | 
+|**waterfront** | if there is a waterview from the house | 
+|**view** | an index from 0 to 4 of how good the view of the property was or how many views the house has | 
+|**condition** | the house preservation condition | 
+|**grade** | a rank from 1 to 13, which ranks the construction quality | 
+|**sqft_above** | the size of the house above the ground level in square feet |
+|**sqft_basement** | the size of the house below the ground level in square feet | 
+|**yr_built** | the year the house was initially built | 
+|**yr_renovated** | the year of the house's last renovation | 
+|**zipcode** | what zipcode area the house is in | 
+|**lat** | Latitude | 
+|**long** | Longitude | 
+|**sqft_livining15** | The square footage of interior housing living space for the nearest 15 neighbors (possibly) | 
+|**sqft_lot15**| The square footage of the land lots of the nearest 15 neighbors | 
+
+
+**Step 2. Descriptive Statistics Analysis:**
+
+Analyzed each of the columns providing descriptive metrics for each attribute, obtaining a table with a statistical summary of the dataframe.
+
+
+**Step 3. Defined Business Data Assumptions:**
 
 - Region granularity
 
@@ -44,7 +77,7 @@ Business Model: Buy houses for a price value and sell them for a higher price to
         1. date, price, condition, grade, zipcode, plus:
             1. median_price - based on zipcode region of the selected houses
             2. percentage_value_below_median
-            3. house_total_m2 - m2_living + m2_lot
+            3. house_total_m2 - m2_living + m2_lot (converted sqft to m2)
             4. price/house_total_m2 - will help more obtaining more informative insights on comparisons, since we are normalizing the 
             price by the house size, and then there is a more fair comparison.
             5. house_type - will help to separate houses based on its property total size, and this way having a first aggregation level by zipcode and then by house_type 
@@ -52,7 +85,6 @@ Business Model: Buy houses for a price value and sell them for a higher price to
             1. best_season - based on zipcode region of the selected houses, and its selling date
             2. selling_price - based on the price and the season
             3. profit - will result from difference between selling_price and price 
-            4. 
 
         The price per m² is being calculated based on the total property size that is living plus lot size, but some records may record the lot size             of a condominium and its only a condominium unit, and the price paid is relative to living size only, but for a farmhouse the price should               consider the lot size as well.
 
@@ -80,7 +112,8 @@ Business Model: Buy houses for a price value and sell them for a higher price to
 
     It is important to do some business data assumption to better analyze the data and take interpretable insights.
 
-    **2. Implementing some data transformation according to business assumptions and useful attributes and dericed ones.**
+**Step 4. Implementing some data transformation according to business assumptions and useful attributes and dericed ones.**
+
 
 ## 4. **Recommendation Report to answer business experts**
     
@@ -99,6 +132,7 @@ The decision to buy the houses is fundamentally based on the potential profit ba
 Why using median price and not mean?
 
 The mean is usually influenced by higher values, so depending on the identities attribute distribution, e.g. the houses pricing value distribution, it may be a bad metric to make decisions upon this baseline. Instead we will use median, that is less prone to follow bigger values. 
+
 
 **1. Identify best houses with comparison within each region**
 
@@ -120,6 +154,7 @@ Labels:
 - 'to compare' (when founding what renovations to do or ammenities to be added on the properties above the median price it can be compared with renewal margin properties that were below the median)
 - 'not worth buying'
 
+
 **2. Define a selling price estimation**
 
 **-** Assuming that the houses to buy have preservation condition rank between 3 and 5, there is some expectancy to have more profit gradually from houses with rank 3 to 5, on ascending order. Since the houses with rank 5 may have been sold below the region median because of bad real estate marketing strategy, or it was sold on a time period of low appreciation, that will be studied on the next business question. And the rank 3 were more probable sold below that appreciation value because of obvious lower preservation conditions and few amenities. 
@@ -132,6 +167,7 @@ Labels:
 2. then between 25% and 50% an appreciation of 25%, and from 0 to 25% half of the appreciation. 
 3. and for houses with condition rank 5, the same appreciation model but with less 5% on each interval.
 
+
 **3. Ordering houses to buy with defined priorities**
 
 1. Ordered by percentage_below_median_price, on a descending order
@@ -140,18 +176,25 @@ Labels:
 
 I'm giving priority to the percentage value below the median price because it is the metric that gives more confidence since it has less derivation dependency, i.e. it results directly from measuring the rate of the price over median price, unlike profit that is based on a selling price derivation, and the selling price is found based on empirical business assumptions.
 
+
 **4. Visualize recommended houses**
 
 1. Recommended houses Density Map
-    ![HouseSales-RecommendationSystem/images/](recommended_houses_cloropleth_map.png)    
+
+<img src="images/recommended_houses_density_map.png" style="width:800px ; height:700px">
+
 2. Recommended houses average profit per zipcode (Cloropleth Map)
-    ![HouseSales-RecommendationSystem/images/](recommended_houses_density_map.png)
+
+<img src="images/recommended_houses_cloropleth_map.png" style="width:800px ; height:700px">
 
 Labelling Distribution:
-    | not worth buying    | 7495 |
-    | to consider         | 6888 |
-    | to compare          | 3670 |
-    | to buy              | 3560 |
+| _house_status_       | _N_houses_ |
+| :-----              | :-----   |
+| not worth buying    | 7495     |
+| to consider         | 6888     |
+| to compare          | 3670     |
+| to buy              | 3560     |
+
 
 ### **2. Which houses should be bought and for what price?**
 
@@ -176,10 +219,11 @@ Here is an example of what is the best season and best season median price for e
 - For a specific zipcode region, returns a set of histograms, one on each column for each living_size and on each row for lot_size. 
     On each graph the x-axis will be the amenity and the y-axis the number of amenities.
 
-![HouseSales-RecommendationSystem/charts](amenities_per_house_size_groups_hist.png)
-
+<img src="charts/eda_charts/amenities_per_house_size_groups_hist.png" style="width:800px ; height:800px">
+    
 For example, on the zipcode 98005, the houses to compare, that were the ones above the median price and their condition were higher than 3, have more bathroom amenities on general, and also for properties with living and lot large and medium size.
-        
+      
+      
 ## 5. **Business Results**
 
 There are **3 investment yield profit scenarios**, for some fix and flip or only market appreciation with time, according to some criteria:
@@ -200,6 +244,7 @@ There are **3 investment yield profit scenarios**, for some fix and flip or only
 
 Hence the sum of the median profit for the top 5 zip codes totals 778,443.75$ with an initial investment of 4,750,000.0$ and a sales revenue of 5,565,827.40$  
 
+
 ## 6. **Conclusion**
 
 This project is a Data Analysis which was tailored to find actionable insights and therefore solutions to the real estate business experts specific problems.
@@ -212,10 +257,10 @@ To make the report easy and interactive I built an app to run on a cloud applica
     
 ## 7. **Next actionable steps**
 
+
 ## 8. Author
    Michael Madeira
 
   <div style="display: center"><br>
       <a href="https://www.linkedin.com/in/michael-madeira-7b4350a7/" target="_blank"><img src="https://img.shields.io/badge/-LinkedIn-%230077B5?style=for-the-badge&logo=linkedin&logoColor=white" target="_blank"></a>
     </div>
-### Talk to me...
