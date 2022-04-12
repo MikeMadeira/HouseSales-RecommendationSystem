@@ -1,6 +1,6 @@
-<img src="images/real_estate_project_2.jpg" style="width:900px ; height:700px">
-    
 # Real Estate Investment Recommendation System
+
+<img src="images/real_estate_project_2.jpg" style="width:900px ; height:700px">
 
 This project is a recommendation system for Real Estate companies based on insights from exploratory data analysis, where they can visualize customized dashboards to explore the real estate portfolio, with some statistics and interactive maps. 
 
