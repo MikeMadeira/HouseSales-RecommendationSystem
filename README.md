@@ -108,6 +108,9 @@ Housing price is varying from 75 000.00$ to 7 700 000.00$ which reveals a wide r
 </details>
 <br>
 
+**Step 5. Build a report to answer business questions based on the data analysis and some empirical rules**
+
+
 ---
 ## 4. **Recommendation Report to answer business experts**
     
