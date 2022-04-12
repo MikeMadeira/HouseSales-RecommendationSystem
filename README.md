@@ -123,12 +123,12 @@ The price value will be used to calculate the profit, from the difference with t
 
 The decision to buy the houses is fundamentally based on the potential profit based on the expenses and the potential margin to increase the selling price value. The houses not considered to buy, can have different evaluation afterwards.
 
-Why using median price and not mean?
+Why I'm using median price and not mean?
 
 The mean is usually influenced by higher values, so depending on the identities attribute distribution, e.g. the houses pricing value distribution, it may be a bad metric to make decisions upon this baseline. Instead we will use median, that is less prone to follow bigger values. 
 
 
-**1. Identify best houses with comparison within each region**
+#### 1. Identify best houses with comparison within each region
 
 **-** The houses that have a price value lower than the median price, compared with houses that belong to the same region, and are in good conditions (condition $\epsilon$ [3,5]), can be sold for a higher price, so are good to buy.
 
@@ -149,7 +149,7 @@ Labels:
 - 'not worth buying'
 
 
-**2. Define a selling price estimation**
+#### 2. Define a selling price estimation
 
 **-** Assuming that the houses to buy have preservation condition rank between 3 and 5, there is some expectancy to have more profit gradually from houses with rank 3 to 5, on ascending order. Since the houses with rank 5 may have been sold below the region median because of bad real estate marketing strategy, or it was sold on a time period of low appreciation, that will be studied on the next business question. And the rank 3 were more probable sold below that appreciation value because of obvious lower preservation conditions and few amenities. 
 
@@ -162,7 +162,7 @@ Labels:
 3. and for houses with condition rank 5, the same appreciation model but with less 5% on each interval.
 
 
-**3. Ordering houses to buy with defined priorities**
+#### 3. Ordering houses to buy with defined priorities
 
 1. Ordered by percentage_below_median_price, on a descending order
 2. then by condition, on a ascending order
@@ -171,7 +171,7 @@ Labels:
 I'm giving priority to the percentage value below the median price because it is the metric that gives more confidence since it has less derivation dependency, i.e. it results directly from measuring the rate of the price over median price, unlike profit that is based on a selling price derivation, and the selling price is found based on empirical business assumptions.
 
 
-**4. Visualize recommended houses**
+#### 4. Visualize recommended houses
 
 1. Recommended houses Density Map
 
@@ -236,7 +236,7 @@ There are **3 investment yield profit scenarios**, for some fix and flip or only
 |	98040	| 108650.00 |
 |	98102   | 95000.00 |	
 
-Hence the sum of the median profit for the top 5 zip codes totals 778,443.75$ with an initial investment of 4,750,000.0$ and a sales revenue of 5,565,827.40$  
+Hence the sum of the median profit for the top 5 zip codes totals **778,443.75$** with an initial investment of **4,750,000.0$** and a sales gross revenue of **5,565,827.40$**.  
 
 ---
 ## 6. **Conclusion**
