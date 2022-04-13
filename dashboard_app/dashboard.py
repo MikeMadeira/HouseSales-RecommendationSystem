@@ -27,18 +27,25 @@ def main():
         data = get_data(path)
         geofile = get_geofile(url)
 
-        # Data Transformation
-        data['price_m2'] = data['price'] / (data['sqft_lot'] * 0.093)
-
         # make a safe deep copy
         data_analysis = data.copy(deep=True)
+        
+        # Pre-Process
+        data_analysis = pre_processing(data_analysis)
+        
+        # create house total size
+        data_analysis['house_total_m2'] = data_analysis['m2_living'] + data_analysis['m2_lot']
 
+        # create price/m²
+        data_analysis['price_m2'] = data_analysis['price']/data_analysis['house_total_m2']
+    
         # Data Visualization
         visualize_overview(data_analysis)
         statistics_view(data_analysis)
         
         st.title( 'Region Overview' )
         c1, c2 = st.columns( ( 1, 1 ) )
+        
         density_map(data_analysis,geofile,c1)
         cloropleth_map(data_analysis,geofile,c2,'price','PRICE')
         
@@ -122,7 +129,7 @@ def set_page_header(status):
     
     st.write("Feel free to change between dashboards:")
     
-    f_dashboard = st.selectbox('Choose Dashboard',['Macro Dashboard','Report Dashboard'])
+    f_dashboard = st.selectbox('Choose Dashboard',['','Macro Dashboard','Report Dashboard'])
     if status == 'initial_page':
         if f_dashboard == 'Macro Dashboard':
             status = 'macro_analysis'
@@ -322,7 +329,7 @@ def statistics_view(data):
     # Total and Average metrics
     df1 = data[['id','zipcode']].groupby('zipcode').count().reset_index()
     df2 = data[['price','zipcode']].groupby('zipcode').mean().reset_index()
-    df3 = data[['sqft_living','zipcode']].groupby('zipcode').mean().reset_index()
+    df3 = data[['m2_living','zipcode']].groupby('zipcode').mean().reset_index()
     df4 = data[['price_m2','zipcode']].groupby('zipcode').mean().reset_index()
 
     # merge
@@ -586,7 +593,7 @@ def pre_processing(df):
     # convert squared feet to squared meters of both living and lot size
     df[['m2_living','m2_above','m2_basement','m2_lot']] = df[['sqft_living','sqft_above','sqft_basement','sqft_lot']] * 0.0929
 
-    df.drop(['sqft_living','sqft_above','sqft_basement','sqft_lot'], axis=1, inplace=True)
+    df = df.drop(['sqft_living','sqft_above','sqft_basement','sqft_lot'], axis=1)
     
     return df
 
