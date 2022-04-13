@@ -5,61 +5,95 @@ import numpy as np
 import folium
 
 from PIL import Image
+from numerize.numerize import numerize
 from streamlit_folium import folium_static
 from folium.plugins import MarkerCluster
 from datetime import datetime
 import time
 
 import plotly.express as px
+from matplotlib import pyplot as plt
 
     
 def main():
-    
     status = 'initial_page'
     new_status = set_page_header(status)
     
+    path = '../data/kc_house_data.csv'
+    url = 'https://opendata.arcgis.com/datasets/83fc2e72903343aabff6de8cb445b81c_2.geojson'
+        
     if new_status == 'macro_analysis':
         # Extract Data
-        path = '../data/kc_house_data.csv'
         data = get_data(path)
-        
-        url = 'https://opendata.arcgis.com/datasets/83fc2e72903343aabff6de8cb445b81c_2.geojson'
         geofile = get_geofile(url)
 
         # Data Transformation
         data['price_m2'] = data['price'] / (data['sqft_lot'] * 0.093)
 
         # make a safe deep copy
-        data_copy = data.copy(deep=True)
+        data_analysis = data.copy(deep=True)
 
         # Data Visualization
-        visualize_overview(data_copy)
-        statistics_view(data_copy)
-        density_plot(data_copy, geofile)
-        price_variation(data_copy)
-        comercial_dist(data_copy)
-        physical_attr_dist(data_copy)
+        visualize_overview(data_analysis)
+        statistics_view(data_analysis)
+        
+        st.title( 'Region Overview' )
+        c1, c2 = st.columns( ( 1, 1 ) )
+        density_map(data_analysis,geofile,c1)
+        cloropleth_map(data_analysis,geofile,c2,'price','PRICE')
+        
+        price_variation(data_analysis)
+        comercial_dist(data_analysis)
+        physical_attr_dist(data_analysis)
         
     if new_status == 'report_analysis':
-        # Extract Data
-        path = '../data/kc_house_data.csv'
-        data = get_data(path)
         
-        url = 'https://opendata.arcgis.com/datasets/83fc2e72903343aabff6de8cb445b81c_2.geojson'
+        # Extract Data
+        data = get_data(path)
         geofile = get_geofile(url)
-            
-        # Data Transformation
-        data['price_m2'] = data['price'] / (data['sqft_lot'] * 0.093)
-
+        
         # make a safe deep copy
-        data_copy = data.copy(deep=True)
+        report_data = data.copy(deep=True)
+        
+        # Data Transformation
+        report_data = pre_processing(report_data)
 
+        # Feature Engineering
+        report_data = feature_engineering(report_data)
+        
+        # Set Report side bar
+        filters = set_sidebar(report_data)
+        
+        # Filter Data to report table
+        report_table_data = filter_data(report_data,filters,'table')
+        
+        # Report Overview
+        report_overview(report_table_data)
+        
+        st.markdown('---')
         # Data Visualization
-        visualize_overview(data_copy)
-
+        visualize_report_table(report_table_data)
+        
+        # Filter Data to report maps
+        report_maps_data = filter_data(report_data,filters,'maps')
+        
+        st.markdown('---')
+        st.title( 'Region Overview' )
+        c1, c2 = st.columns( ( 1, 1 ) )
+        density_map(report_maps_data,geofile,c1)
+        cloropleth_map(report_maps_data,geofile,c2,'profit_est','PROFIT')
+        
+        st.markdown('---')
+        st.title( 'Proposals for Renewals' )
+        renovation_histograms(report_data)
+        
     set_page_footer()
     
-    
+
+# ======================================================
+# =============== PAGE CONFIG FUNCIONS =================
+# ======================================================
+
 def set_page_header(status):
     
     # Visualization Setup
@@ -71,9 +105,9 @@ def set_page_header(status):
 
     # image
     with c1:
-        photo = Image.open('real_estate_project_2.jpg')
+        photo = Image.open('real_estate_project.jpg')
         st.image(photo)
-    
+
     # title and subtitle
     with c2:
         st.write('')
@@ -83,15 +117,16 @@ def set_page_header(status):
                     'font-weight: bold;' \
                     'font-style: normal;' \
                     'text-align: left;">' \
-                    'Real Estate Investment Recommendation Dashboard</p> </div>'
+                    'Real Estate Investment Dashboard</p> </div>'
         st.markdown(HR_format, unsafe_allow_html=True)
     
-    st.subheader("Feel free to change between dashboards:")
+    st.write("Feel free to change between dashboards:")
     
+    f_dashboard = st.selectbox('Choose Dashboard',['Macro Dashboard','Report Dashboard'])
     if status == 'initial_page':
-        if st.button('Macro Dashboard'):
+        if f_dashboard == 'Macro Dashboard':
             status = 'macro_analysis'
-        if st.button('Report Dashboard'):
+        if f_dashboard == 'Report Dashboard':
             status = 'report_analysis'
 
     
@@ -103,7 +138,7 @@ def set_page_footer():
     
     st.markdown('The **Macro Dashboard** allows for a business manager to check a data overview and do some basic statistical analysis.')
     
-    st.markdown('The **Report Dashboard** allows for a business manager to check his required report on business problems presented last meeting.')
+    st.markdown('The **Recommendation Report Dashboard** allows for a business manager to check his required report on business problems presented last meeting.')
     st.write('')
     
     # Additional Info Section
@@ -118,6 +153,43 @@ def set_page_footer():
     st.markdown('Other Projects: [DSPortfolio](https://github.com/MikeMadeira)')
     st.markdown('Contact me: [LinkedIn](https://www.linkedin.com/in/michael-madeira-7b4350a7/)')
     
+    
+def set_sidebar(data):
+    
+    # filters
+    invest_opt = st.sidebar.multiselect('Investment Option', data.status.unique(), default=['to buy'])
+    house_id = st.sidebar.multiselect('House Id', data.id)
+    f_zipcode = st.sidebar.multiselect('Enter zipcode', data['zipcode'].unique())
+    f_attributes = st.sidebar.multiselect('Enter columns', data.columns, default=['id','zipcode','price','selling_price','profit_est','best_season_selling_price','best_season_profit_est','status'])
+    f_living_size = st.sidebar.multiselect('Living Size', data.living_size.unique())
+    f_lot_size = st.sidebar.multiselect('Lot Size', data.lot_size.unique())
+    min_price = int(data.price.min())
+    max_price = int(data.price.max())
+    st.sidebar.subheader('Select Max Price')
+    f_price = st.sidebar.slider('Price', min_price,
+                                              max_price,
+                                              min_price)
+    min_profit = int(data.profit_est.min())
+    max_profit = int(data.profit_est.max())
+    st.sidebar.subheader('Select Min Profit')
+    f_profit = st.sidebar.slider('Profit', min_profit,
+                                           max_profit,
+                                           min_profit)
+
+    filters_dict = {'status':invest_opt,
+                    'id':house_id,
+                    'zipcode':f_zipcode,
+                    'attributes':f_attributes,
+                    'living_size':f_living_size,
+                    'lot_size':f_lot_size,
+                    'price':f_price,
+                    'profit_est':f_profit}
+    return filters_dict
+
+# =================================================
+# =============== DATA AND FILES FUNCTIONS =================
+# =================================================   
+
 @st.cache(allow_output_mutation=True)
 def get_data(path):
     data = pd.read_csv(path)
@@ -133,8 +205,54 @@ def get_geofile(url):
     return geofile
 
 
-def visualize_overview(data):
+def aux_filters_selection_mask(data,filters):
+    
+    empty_filter_mask = [True]*data.shape[0]
+    final_mask = empty_filter_mask
+    for feature in filters:
+        if (filters[feature] != []) & (feature != 'attributes'):
+            final_mask = np.logical_and(final_mask, data[feature].isin(filters[feature]))
+        else:
+            final_mask = np.logical_and(final_mask, empty_filter_mask)
             
+    return final_mask
+
+def filter_data(data,filters,report_element):
+    
+    filters_list = {key: filters[key] for key in filters if isinstance(filters[key],list)}
+
+    mask = aux_filters_selection_mask(data,filters_list)
+    
+    data_filtered = data
+    house_id = filters_list['id']
+    f_attributes = filters_list['attributes']
+    if ((house_id != []) & (f_attributes != [])) & (report_element == 'table'):
+        data_filtered = data.loc[mask & data['id'].isin(house_id),f_attributes]
+    elif ((house_id != []) & (f_attributes != [])) & (report_element != 'table'):
+        data_filtered = data.loc[mask & data['id'].isin(house_id),:]
+    elif ((house_id == []) & (f_attributes != [])) & (report_element == 'table'):
+        data_filtered = data.loc[mask,f_attributes]
+    elif ((house_id == []) & (f_attributes != [])) & (report_element != 'table'):
+        data_filtered = data.loc[mask,:]
+    elif ((house_id != []) & (f_attributes == [])):
+        data_filtered = data.loc[mask & data['id'].isin(house_id),:]
+    else:
+        data_filtered = data.loc[mask,:]
+        
+    price_filter = filters['price']
+    data_filtered = data_filtered.loc[data_filtered.price > price_filter]
+    
+    price_profit = filters['profit_est']
+    data_filtered = data_filtered.loc[data_filtered.profit_est > price_profit]
+    
+    return data_filtered
+# =================================================
+# =============== TABLES FUNCTIONS =================
+# =================================================
+
+def visualize_overview(data):
+    
+    # filters
     f_attributes = st.sidebar.multiselect('Enter columns', data.columns)
     f_zipcode = st.sidebar.multiselect('Enter zipcode', data['zipcode'].unique())
 
@@ -152,6 +270,51 @@ def visualize_overview(data):
     st.write(data_overview.head())
 
     return None
+
+def report_overview(data):
+    st.title('Recommendation House Report')
+    
+    exp_overall = st.expander("Click here to expand/close overall information section.", expanded=True)
+    with exp_overall:
+        invested = data.loc[data.status == 'to buy','price'].sum()
+        returned = data.loc[data.status == 'to buy','selling_price'].sum()
+        profit = data.loc[data.status == 'to buy','profit_est'].sum()
+        gross_revenue = (profit / invested) * 100
+    
+        c1, c2 = st.columns((1,3))
+        with c1:
+            st.header('Profit Overview')
+            #st.subheader('Maximum Expected Profit')
+            st.metric(label='Maximum Expected Profit', value=numerize(profit), delta=numerize(gross_revenue) + "%")
+            #st.subheader('Maximum Value Invested')
+            st.metric(label='Maximum Value Invested', value=numerize(invested))
+            #st.subheader('Maximum Value Returned')
+            st.metric(label='Maximum Value Returned', value=numerize(returned))
+        with c2:
+            # mainly insights
+            st.header('Business Questions:')
+            st.write('**1. Which houses should be bought and for what price?**')
+            st.write('**2. Once its bought when it''s the best time period to sell it and for what price?**')
+            st.write('**3. To rise the housing selling price, the company should do a renovation. So what would be good renewal changes?**')
+            st.write('')
+            st.subheader('Total of properties on dataset: {:,}'.format(data.shape[0]))
+            st.subheader('Total of properties suggested to be purchased: {:,}'.format(data.loc[data.status == 'to buy'].shape[0]))
+    
+    
+def visualize_report_table(data):
+
+    st.header('Recommendation Houses Table')
+        
+    st.write(data)
+    
+    st.write('')
+    st.write('The best season to sell and the respective expected selling price and profit for each house, can be extracted by changing the house selection through the filters on the sidebar')
+
+    return None
+
+# =======================================================================
+# =============== VISUALIZATION OF INFORMATION FUNCIONS =================
+# =======================================================================
 
 def statistics_view(data):
     c1,c2 = st.columns((1,1))
@@ -188,17 +351,11 @@ def statistics_view(data):
 
     return None
 
-def density_plot(data,geofile):
-    # =======================
-    # Densidade de Portfolio
-    # =======================
+def density_map(data,geofile,st_col):
+    
+    st_col.header( 'Recommended Houses Density Map' )
 
-    st.title( 'Region Overview' )
-
-    c1, c2 = st.columns( ( 1, 1 ) )
-    c1.header( 'Portfolio Density' )
-
-    df = data.sample( 10 )
+    df = data#.sample( 10 )
 
     # Base Map - Folium
     density_map = folium.Map(location=[data['lat'].mean(),
@@ -210,22 +367,24 @@ def density_plot(data,geofile):
                       popup='Sold R${0} on: {1}. Features: {2}, {3} bedrooms, {4} bathrooms, year built: {5}'.format(
                           row['price'],
                           row['date'],
-                          row['sqft_living'],
+                          row['m2_living'],
                           row['bedrooms'],
                           row['bathrooms'],
                           row['yr_built']
                       )).add_to(marker_cluster)
 
-    with c1:
+    with st_col:
         folium_static(density_map)
-
+        
+def cloropleth_map(data,geofile,st_col,agg_feature,agg_feature_name):
+    
     # Region Price Map
-    c2.header('Price Density')
+    st_col.header('Profit per Region Map')
+    
+    df = data[[agg_feature, 'zipcode']].groupby('zipcode').mean().reset_index()
+    df.columns = ['ZIP', agg_feature_name]
 
-    df = data[['price', 'zipcode']].groupby('zipcode').mean().reset_index()
-    df.columns = ['ZIP', 'PRICE']
-
-    df = df.sample(10)
+    df = df#.sample(10)
 
     geofile = geofile[geofile['ZIP'].isin(df['ZIP'].tolist())]
 
@@ -235,17 +394,66 @@ def density_plot(data,geofile):
 
     region_price_map.choropleth(data=df,
                                 geo_data=geofile,
-                                columns=['ZIP', 'PRICE'],
+                                columns=['ZIP', agg_feature_name],
                                 key_on='feature.properties.ZIP',
                                 fill_color='YlOrRd',
                                 fill_opacity=0.7,
                                 line_opacity=0.2,
-                                legend_name='AVG PRICE')
+                                legend_name='AVG '+agg_feature_name)
 
-    with c2:
+    with st_col:
         folium_static(region_price_map)
+    
+    
+def renovation_histograms(house_df: pd.DataFrame):
 
-    return None
+    ''' 
+        For a specific zipcode region, returns a set of histograms, one 
+        on each column for each living_size and on each row for 
+        lot_size.
+        On each graph the x-axis will be the amenity and the y-axis 
+        the number of amenities.
+
+        Parameters
+        ----------
+        zipcode : int
+        amenity : string or list
+
+        Returns
+        ----------
+        plots a set of histograms
+    ''' 
+    
+    zipcode = st.sidebar.selectbox('Enter the zipcode to check renovation proposals:',house_df.zipcode.unique())
+    unique_zipcodes = house_df['zipcode'].unique()
+    
+    if zipcode in unique_zipcodes:
+        
+        zipcode_houses_df = house_df.loc[house_df.zipcode == zipcode,:]
+        columns = zipcode_houses_df['living_size'].unique()
+        rows = zipcode_houses_df['lot_size'].unique()
+        
+        houses_status_df = zipcode_houses_df.loc[(zipcode_houses_df.status == 'to buy') |
+                                                 (zipcode_houses_df.status == 'to compare'),:]
+        
+        
+        houses_to_buy_df = zipcode_houses_df.loc[zipcode_houses_df.status == 'to buy',:]
+        houses_to_compare_df = zipcode_houses_df.loc[zipcode_houses_df.status == 'to compare',:]
+        
+        houses_to_buy_grouped = houses_to_buy_df.groupby(by=['living_size','lot_size']).median().reset_index()
+        houses_to_compare_grouped = houses_to_compare_df.groupby(by=['living_size','lot_size']).median().reset_index()
+        
+        houses_to_buy_grouped.rename(columns = {'bedrooms':'houses_to_buy_bedrooms'}, inplace = True)
+        houses_to_buy_grouped.rename(columns = {'bathrooms':'houses_to_buy_bathrooms'}, inplace = True)
+        houses_to_compare_grouped.rename(columns = {'bedrooms':'houses_to_compare_bedrooms'}, inplace = True)
+        houses_to_compare_grouped.rename(columns = {'bathrooms':'houses_to_compare_bathrooms'}, inplace = True)
+        
+        fig, ax = plt.subplots()
+        houses_to_compare_grouped['property_size'] = houses_to_compare_grouped['living_size']+'_'+houses_to_compare_grouped['lot_size']
+        houses_to_compare_grouped.plot.bar(x='property_size',y=['houses_to_compare_bedrooms','houses_to_compare_bathrooms'],ax=ax)
+        houses_to_buy_grouped['property_size'] = houses_to_buy_grouped['living_size']+'_'+houses_to_buy_grouped['lot_size']
+        houses_to_buy_grouped.plot.bar(x='property_size',y=['houses_to_buy_bedrooms','houses_to_buy_bathrooms'],ax=ax,color=['lightblue','orange'])
+        st.pyplot(fig)
 
 
 def price_variation(data):
@@ -364,6 +572,121 @@ def physical_attr_dist(data):
 
     fig = px.histogram(df, x='waterfront', nbins=10)
     c2.plotly_chart(fig, use_container_width=True)
+
+    
+# ============================================================
+# =============== DATA MANIPULATION FUNCIONS =================
+# ============================================================
+
+def pre_processing(df):
+    
+    # convert date type
+    df.date = pd.to_datetime(df.date)
+    
+    # convert squared feet to squared meters of both living and lot size
+    df[['m2_living','m2_above','m2_basement','m2_lot']] = df[['sqft_living','sqft_above','sqft_basement','sqft_lot']] * 0.0929
+
+    df.drop(['sqft_living','sqft_above','sqft_basement','sqft_lot'], axis=1, inplace=True)
+    
+    return df
+
+def feature_engineering(df):
+    
+    # create house total size
+    df['house_total_m2'] = df['m2_living'] + df['m2_lot']
+    
+    # create price/m²
+    df['price_m2'] = df['price']/df['house_total_m2']
+    
+    # discretize and categorize living_size, lot_size and house_type
+    df['living_size'] = df['m2_living'].apply(lambda x: 'small_house' if x <= 135
+                                                   else 'medium_house' if (x > 135) and (x <= 280)
+                                                   else 'large_house')
+
+    df['lot_size'] = df['m2_lot'].apply(lambda x: 'small_terrain' if x <= 500
+                                             else 'medium_terrain' if (x > 500) and (x <= 1800)
+                                             else 'large_terrain')
+    df['house_type'] = df['house_total_m2'].apply(lambda x: 'apartment' if x <= 200
+                                                       else 'villa' if (x > 200) and (x <= 400)
+                                                       else 'townhouse' if (x > 400) and (x <= 1000)
+                                                       else 'mansion' if (x > 1000) and (x <= 10000)
+                                                       else 'countryhouse')
+    
+    # create the median price per region, living_size and lot_size
+    zipcode_median_price = df[['price','zipcode','living_size','lot_size']].groupby(['zipcode','living_size','lot_size']).median().reset_index()
+    zipcode_median_price.columns = ['zipcode','living_size','lot_size','region_median_price']
+
+    df = pd.merge(df,zipcode_median_price,on=['zipcode','living_size','lot_size'],how='inner')
+    
+    # create the median price per m2 per region, living_size and lot_size
+    zipcode_median_price_m2 = df[['price_m2', 'zipcode','living_size','lot_size']].groupby(['zipcode','living_size','lot_size']).median().reset_index()
+    zipcode_median_price_m2.columns = ['zipcode','living_size','lot_size','region_median_price_m2']
+
+    df = pd.merge(df,zipcode_median_price_m2,on=['zipcode','living_size','lot_size'],how='inner')
+    
+    # create the recommendation label feature as status
+    df['status'] = df[['price','condition','region_median_price']].apply(lambda x: 'to buy' if (x[0] < x[2]) & (x[1] > 3)\
+                                                                       else 'to consider' if (x[0] < x[2]) & (x[1] == 3)\
+                                                                       else 'to compare' if (x[0] > x[2])  & (x[1] > 3)\
+                                                                       else 'not worth buying',  axis = 1)
+    
+    # create percentage_value_below_median
+    df['perc_value_below_median_price'] = (1 - (df['price']/df['region_median_price']))*100
+    
+    # set a selling price
+    df['selling_price'] = df[['price','condition','status','perc_value_below_median_price']].apply(lambda x: x[0] if (x[1] == 3) & (x[2] == 'to consider')\
+                                                                                                                     else x[0]*1.5 if (x[1] == 4) & (x[2] == 'to buy') & (x[3] > 50 and x[3] < 75)\
+                                                                                                                     else x[0]*1.25 if (x[1] == 4) & (x[2] == 'to buy') & (x[3] > 25 and x[3] < 50)\
+                                                                                                                     else x[0]*1.125 if (x[1] == 4) & (x[2] == 'to buy') & (x[3] > 0 and x[3] < 25)\
+                                                                                                                     else x[0]*1.45 if (x[1] == 5) & (x[2] == 'to buy') & (x[3] > 50 and x[3] < 75)\
+                                                                                                                     else x[0]*1.20 if (x[1] == 5) & (x[2] == 'to buy') & (x[3] > 25 and x[3] < 50)\
+                                                                                                                     else x[0]*1.075 if (x[1] == 5) & (x[2] == 'to buy') & (x[3] > 0 and x[3] < 25)\
+                                                                                                                     else x[0], axis=1)
+
+    # Create profit variable
+    df['profit_est'] = df['selling_price'] - df['price']
+    
+    # sort by percentage below median price, condition and profit estimation, descending, ascending and descending respectively
+    sorted_df = df.sort_values(by=['perc_value_below_median_price', 'condition', 'profit_est'], ascending=[False,True,False])
+    
+    # Create a season column through date
+    sorted_df['season'] = sorted_df[['price','date']].apply(lambda x: 'spring' if x[1].month in (4,5,6)
+                                                                                                   else 'summer' if x[1].month in (7,8,9)
+                                                                                                   else 'autumn' if x[1].month in (10,11,12)
+                                                                                                   else 'winter', axis=1)
+
+    sorted_df.loc[(sorted_df['date'].dt.month == 3) & (sorted_df['date'].dt.day > 19),'season'] = 'spring'
+    sorted_df.loc[(sorted_df['date'].dt.month == 6) & (sorted_df['date'].dt.day > 20),'season'] = 'summer'
+    sorted_df.loc[(sorted_df['date'].dt.month == 9) & (sorted_df['date'].dt.day > 21),'season'] = 'autumn'
+    sorted_df.loc[(sorted_df['date'].dt.month == 12) & (sorted_df['date'].dt.day > 20),'season'] = 'winter'
+    
+    # Calculate the median price per season per region, living_size and lot_size
+    groups_zip_sizes_season = sorted_df[['price', 'zipcode','living_size','lot_size','season']].groupby(['zipcode','living_size','lot_size','season'])
+    median_price_per_season = groups_zip_sizes_season.median().reset_index()
+    median_price_per_season.columns = ['zipcode','living_size','lot_size','season', 'median_price']
+    unique_indices = median_price_per_season[['zipcode','living_size','lot_size']].drop_duplicates()
+    best_season_df = pd.DataFrame(columns=['zipcode','living_size','lot_size','best_season','best_season_median_price'])
+    for row in unique_indices.iterrows():
+
+        rows_indeces = (median_price_per_season['zipcode'] == row[1]['zipcode']) & \
+                       (median_price_per_season['living_size'] == row[1]['living_size']) & \
+                       (median_price_per_season['lot_size'] == row[1]['lot_size'])
+
+        unique_df = median_price_per_season.loc[rows_indeces]
+        max_median_price = unique_df['median_price'].max()
+
+        row_append = unique_df.loc[unique_df['median_price'] == max_median_price]
+        row_append.columns = ['zipcode','living_size','lot_size','best_season','best_season_median_price']
+
+        best_season_df = best_season_df.append(row_append,ignore_index=True)
+    houses_best_selling_price = pd.merge(sorted_df,best_season_df,how='left',on=['zipcode','living_size','lot_size'])
+    
+    # set a best season selling price
+    houses_best_selling_price['best_season_selling_price'] = houses_best_selling_price[['selling_price','best_season_median_price']].apply(lambda x: x[0]*1.05 if (x[0] < x[1])\
+                                                                                                                                                else x[0], axis=1)
+    houses_best_selling_price['best_season_profit_est'] = houses_best_selling_price['best_season_selling_price'] - houses_best_selling_price['price']
+    return houses_best_selling_price
+
 
 if __name__ == '__main__':
     main()
