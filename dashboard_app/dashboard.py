@@ -2,6 +2,7 @@ import geopandas
 import streamlit as st
 import pandas as pd
 import numpy as np
+import math
 import folium
 
 from PIL import Image
@@ -17,82 +18,22 @@ from matplotlib import pyplot as plt
     
 def main():
     status = 'initial_page'
-    new_status = set_page_header(status)
+    
+    set_page_header(status)
+    
+    option = data_size_choice()
+    
+    if option != '':
+        status = dashboard_choice(status)
     
     path = '../data/kc_house_data.csv'
     url = 'https://opendata.arcgis.com/datasets/83fc2e72903343aabff6de8cb445b81c_2.geojson'
         
-    if new_status == 'macro_analysis':
-        # Extract Data
-        data = get_data(path)
-        geofile = get_geofile(url)
-
-        # make a safe deep copy
-        data_analysis = data.copy(deep=True)
+    if status == 'macro_analysis':
+        macro_dashboard(path,url,option)
         
-        # Pre-Process
-        data_analysis = pre_processing(data_analysis)
-        
-        # create house total size
-        data_analysis['house_total_m2'] = data_analysis['m2_living'] + data_analysis['m2_lot']
-
-        # create price/m²
-        data_analysis['price_m2'] = data_analysis['price']/data_analysis['house_total_m2']
-    
-        # Data Visualization
-        visualize_overview(data_analysis)
-        statistics_view(data_analysis)
-        
-        st.title( 'Region Overview' )
-        c1, c2 = st.columns( ( 1, 1 ) )
-        
-        density_map(data_analysis,geofile,c1)
-        cloropleth_map(data_analysis,geofile,c2,'price','PRICE')
-        
-        price_variation(data_analysis)
-        comercial_dist(data_analysis)
-        physical_attr_dist(data_analysis)
-        
-    if new_status == 'report_analysis':
-        
-        # Extract Data
-        data = get_data(path)
-        geofile = get_geofile(url)
-        
-        # make a safe deep copy
-        report_data = data.copy(deep=True)
-        
-        # Data Transformation
-        report_data = pre_processing(report_data)
-
-        # Feature Engineering
-        report_data = feature_engineering(report_data)
-        
-        # Set Report side bar
-        filters = set_sidebar(report_data)
-        
-        # Filter Data to report table
-        report_table_data = filter_data(report_data,filters,'table')
-        
-        # Report Overview
-        report_overview(report_table_data)
-        
-        st.markdown('---')
-        # Data Visualization
-        visualize_report_table(report_table_data)
-        
-        # Filter Data to report maps
-        report_maps_data = filter_data(report_data,filters,'maps')
-        
-        st.markdown('---')
-        st.title( 'Region Overview' )
-        c1, c2 = st.columns( ( 1, 1 ) )
-        density_map(report_maps_data,geofile,c1)
-        cloropleth_map(report_maps_data,geofile,c2,'profit_est','PROFIT')
-        
-        st.markdown('---')
-        st.title( 'Proposals for Renewals' )
-        renovation_histograms(report_data)
+    if status == 'report_analysis':
+        report_dashboard(path,url,option)
         
     set_page_footer()
     
@@ -127,17 +68,7 @@ def set_page_header(status):
                     'Real Estate Investment Dashboard</p> </div>'
         st.markdown(HR_format, unsafe_allow_html=True)
     
-    st.write("Feel free to change between dashboards:")
-    
-    f_dashboard = st.selectbox('Choose Dashboard',['','Macro Dashboard','Report Dashboard'])
-    if status == 'initial_page':
-        if f_dashboard == 'Macro Dashboard':
-            status = 'macro_analysis'
-        if f_dashboard == 'Report Dashboard':
-            status = 'report_analysis'
-
-    
-    return status
+    return None
 
 def set_page_footer():
     st.markdown('---')
@@ -193,24 +124,166 @@ def set_sidebar(data):
                     'profit_est':f_profit}
     return filters_dict
 
+def dashboard_choice(status):
+
+    st.write("Feel free to change between dashboards:")
+    
+    f_dashboard = st.selectbox('Choose Dashboard',['','Macro Dashboard','Report Dashboard'])
+    if status == 'initial_page':
+        if f_dashboard == 'Macro Dashboard':
+            status = 'macro_analysis'
+        if f_dashboard == 'Report Dashboard':
+            status = 'report_analysis'
+            
+    return status
+
 # =================================================
-# =============== DATA AND FILES FUNCTIONS =================
+# =============== DASHBOARD FUNCTIONS =============
+# =================================================
+
+def macro_dashboard(path,url,option):
+    
+    # Extract Data
+    data = get_data(path,option)
+    geofile = get_geofile(url)
+
+    # make a safe deep copy
+    data_analysis = data.copy(deep=True)
+
+    # Pre-Process
+    data_analysis = pre_processing(data_analysis)
+
+    # create house total size
+    data_analysis['house_total_m2'] = data_analysis['m2_living'] + data_analysis['m2_lot']
+
+    # create price/m²
+    data_analysis['price_m2'] = data_analysis['price']/data_analysis['house_total_m2']
+
+    # Data Visualization
+    visualize_overview(data_analysis)
+    statistics_view(data_analysis)
+
+    price_variation(data_analysis)
+    comercial_dist(data_analysis)
+    physical_attr_dist(data_analysis)
+
+    st.title( 'Region Overview' )
+    c1, c2 = st.columns( ( 1, 1 ) )
+
+    density_map(data_analysis,geofile,c1)
+    cloropleth_map(data_analysis,geofile,c2,'price','PRICE')
+    
+
+def report_dashboard(path,url,option):
+
+    # Extract Data
+    data = get_data(path,option)
+    geofile = get_geofile(url)
+
+    # make a safe deep copy
+    report_data = data.copy(deep=True)
+
+    # Data Transformation
+    report_data = pre_processing(report_data)
+
+    # Feature Engineering
+    report_data = feature_engineering(report_data)
+
+    # Set Report side bar
+    filters = set_sidebar(report_data)
+
+    # Filter Data to report table
+    report_table_data = filter_data(report_data,filters,'table')
+
+    # Report Overview
+    st.write(report_table_data.shape)
+    report_overview(report_table_data)
+
+    st.markdown('---')
+    # Data Visualization
+    visualize_report_table(report_table_data)
+
+    # Filter Data to report maps
+    report_maps_data = filter_data(report_data,filters,'maps')
+    st.write(report_maps_data.shape)
+    st.markdown('---')
+    st.title( 'Region Overview' )
+    c1, c2 = st.columns( ( 1, 1 ) )
+    density_map(report_maps_data,geofile,c1)
+    cloropleth_map(report_maps_data,geofile,c2,'profit_est','PROFIT')
+
+    st.markdown('---')
+    st.title( 'Proposals for Renewals' )
+    renovation_histograms(report_data)
+    
+    
+# =================================================
+# =============== DATA AND FILES FUNCTIONS =========
 # =================================================   
 
+@st.cache(suppress_st_warning=True) 
 @st.cache(allow_output_mutation=True)
-def get_data(path):
+def get_data(path, option):
     data = pd.read_csv(path)
     
+    st.write('The complete database has', data.shape[0], 'records. '
+                 'If it is taking too long for the page to load, '
+                        'please select a smaller database size below')
+    
+    # selection of data sample
+    data_25 = data.sample(math.floor(data.shape[0]*0.25))
+    data_50 = data.sample(math.floor(data.shape[0]*0.5))
+    data_75 = data.sample(math.floor(data.shape[0]*0.75))
+    data_100 = data.sample(math.floor(data.shape[0]*1))
+    
+    data_reduced = []
+    # filtering report data = data_r
+    if option == '':
+        data_reduced = []
+    elif option == '25% of data':
+        data_reduced = data_25
+    elif option == '50% of data':
+        data_reduced = data_50
+    elif option == '75% of data':
+        data_reduced = data_75
+    elif option == '100% of data':
+        data_reduced = data_100
+        st.warning('Please, note that choosing this option may slow down the report loading.')
+            
     with st.spinner('Please wait...'):
         time.sleep(1)
             
-    return data
+    return data_reduced
 
 @st.cache(allow_output_mutation=True)
 def get_geofile(url):
     geofile = geopandas.read_file(url)
     return geofile
 
+def data_size_choice():
+
+    with st.container():
+        st.subheader('Choose database size')
+        
+        # list of database sizes
+        option = st.selectbox('Select size', ('', '25% of data', '50% of data', '75% of data', '100% of data'), key='data_size')
+        
+        # filtering report data = data_r
+        if option == '':
+            st.error('Choose database size on the list above to load the report')
+        elif option == '25% of data':
+            st.write('You have chosen 25% random records of the database')
+        elif option == '50% of data':
+            st.write('You have chosen 50% random records of the database')
+        elif option == '75% of data':
+            st.write('You have chosen 75% random records of the database')
+        elif option == '100% of data':
+            st.write('You have chosen the full database')
+            st.warning('Please, note that choosing this option may slow down the report loading.')
+        else:
+            st.info('You must choose the database size')
+
+    return option
 
 def aux_filters_selection_mask(data,filters):
     
@@ -304,8 +377,8 @@ def report_overview(data):
             st.write('**2. Once its bought when it''s the best time period to sell it and for what price?**')
             st.write('**3. To rise the housing selling price, the company should do a renovation. So what would be good renewal changes?**')
             st.write('')
-            st.subheader('Total of properties on dataset: {:,}'.format(data.shape[0]))
-            st.subheader('Total of properties suggested to be purchased: {:,}'.format(data.loc[data.status == 'to buy'].shape[0]))
+            st.subheader('Total properties on selected dataset: {:,}'.format(data.shape[0]))
+            st.subheader('Total properties suggested to be purchased: {:,}'.format(data.loc[data.status == 'to buy'].shape[0]))
     
     
 def visualize_report_table(data):
@@ -460,7 +533,19 @@ def renovation_histograms(house_df: pd.DataFrame):
         houses_to_compare_grouped.plot.bar(x='property_size',y=['houses_to_compare_bedrooms','houses_to_compare_bathrooms'],ax=ax)
         houses_to_buy_grouped['property_size'] = houses_to_buy_grouped['living_size']+'_'+houses_to_buy_grouped['lot_size']
         houses_to_buy_grouped.plot.bar(x='property_size',y=['houses_to_buy_bedrooms','houses_to_buy_bathrooms'],ax=ax,color=['lightblue','orange'])
-        st.pyplot(fig)
+        
+        c1, c2 = st.columns( ( 2, 4 ) )
+        
+        with c1:
+            st.pyplot(fig)
+        
+        with c2:
+            st.subheader('Result of labelling houses with investment option:')
+            st.write(house_df.status.value_counts().rename('number of houses'))
+            st.subheader('Conclusion')
+            st.write('For on each zipcode, if the houses to compare, that were the ones above the median price and their condition were higher than 3, have more bathroom amenities or more bedrooms for houses with different living and lot sizes, comparing with the houses to buy, that need to have some renewal strategy to get an increase on value appreciation.')
+            st.write('(Assuming that the only available amenities or houses features that are able to enhance the property are bathrooms and bedrooms.)')
+        
 
 
 def price_variation(data):
