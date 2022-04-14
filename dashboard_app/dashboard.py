@@ -89,7 +89,7 @@ def set_page_footer():
     st.write('')
     st.write('Real Estate Recommendation Dashboard is a recommendation system for Real Estate companies based on data analysis and insights extraction which was tailored to find actionable insights and therefore solutions to the real estate business experts specific problems.')
     st.write('')
-    st.markdown('Other Projects: [DSPortfolio](https://github.com/MikeMadeira)')
+    st.markdown('Other Projects: [DSPortfolio](https://mikemadeira.github.io/data_science_portfolio/)')
     st.markdown('Contact me: [LinkedIn](https://www.linkedin.com/in/michael-madeira-7b4350a7/)')
     
     
@@ -513,13 +513,14 @@ def portfolio_density(data,geofile,st_col,agg_feature,agg_feature_name):
     marker_cluster = MarkerCluster().add_to(density_map)
     for name, row in df.iterrows():
         folium.Marker([row['lat'], row['long']],
-                      popup='Sold R${0} on: {1}. Features: {2} m2_living, {3} bedrooms, {4} bathrooms, year built: {5}'.format(
+                      popup='Sold R${0} on: {1}. Features: {2} m2_living, {3} bedrooms, {4} bathrooms, year built: {5}, zipcode: {6}'.format(
                           row['price'],
                           row['date'],
                           row['m2_living'],
                           row['bedrooms'],
                           row['bathrooms'],
-                          row['yr_built']
+                          row['yr_built'],
+                          row['zipcode']
                       )).add_to(marker_cluster)
         
         
