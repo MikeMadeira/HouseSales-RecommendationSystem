@@ -659,7 +659,7 @@ def renovation_histograms(house_df: pd.DataFrame):
         houses_to_buy_grouped['property_size'] = houses_to_buy_grouped['living_size']+'_'+houses_to_buy_grouped['lot_size']
         houses_to_buy_grouped.plot.bar(x='property_size',y=['houses_to_buy_bedrooms','houses_to_buy_bathrooms'],ax=ax,color=['lightblue','orange'])
         
-        c1, c2, c3 = st.columns([2,1,2])
+        c1, c2, c3 = st.columns([2,2,2])
         
         with c1:
             st.pyplot(fig)
@@ -668,7 +668,7 @@ def renovation_histograms(house_df: pd.DataFrame):
             st.subheader('Result of labelling houses with investment option:')
             st.write(house_df.status.value_counts().rename('number of houses'))
             st.subheader('Conclusion')
-            st.write('For on each zipcode, if the houses to compare, that were the ones above the median price and their condition were higher than 3, have more bathroom amenities or more bedrooms for houses with different living and lot sizes, comparing with the houses to buy, that need to have some renewal strategy to get an increase on value appreciation.')
+            st.write('For each zipcode, by looking at the houses "to compare", that were the ones above the median price and their condition were higher than 3, bathrooms amenities and bedrooms, for houses with different living and lot sizes, it is possible to identify which could be a renewal strategy to get an increase on value appreciation on houses "to buy" by comparing them.')
             st.write('(Assuming that the only available amenities or houses features that are able to enhance the property are bathrooms and bedrooms.)')
         
 
