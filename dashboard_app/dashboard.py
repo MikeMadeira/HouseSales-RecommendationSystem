@@ -17,6 +17,7 @@ from matplotlib import pyplot as plt
 
     
 def main():
+    
     status = 'initial_page'
     
     set_page_header(status)
@@ -92,7 +93,7 @@ def set_page_footer():
     st.markdown('Contact me: [LinkedIn](https://www.linkedin.com/in/michael-madeira-7b4350a7/)')
     
     
-def set_sidebar(data):
+def set_report_sidebar(data):
     
     # filters
     invest_opt = st.sidebar.multiselect('Investment Option', data.status.unique(), default=['to buy'])
@@ -113,7 +114,8 @@ def set_sidebar(data):
 #     f_profit = st.sidebar.slider('Profit', min_profit,
 #                                            max_profit,
 #                                            min_profit)
-
+    
+    
     filters_dict = {'status':invest_opt,
                     'id':house_id,
                     'zipcode':f_zipcode,
@@ -121,6 +123,66 @@ def set_sidebar(data):
                     'living_size':f_living_size,
                     'lot_size':f_lot_size}#,'price':f_price,'profit_est':f_profit}
     return filters_dict
+
+def set_macro_sidebar(data):
+    
+    # filters
+    f_attributes = st.sidebar.multiselect('Enter columns', data.columns)
+    house_id = st.sidebar.multiselect('House Id', np.sort(data.id.unique()))
+    f_zipcode = st.sidebar.multiselect('Enter zipcode', np.sort(data['zipcode'].unique()))
+    f_order_column = st.sidebar.selectbox('Order Data Overview by column:',data.columns)
+    f_ascending = st.sidebar.checkbox('Ascending')
+    
+    min_year_built = int(data['yr_built'].min())
+    max_year_built = int(data['yr_built'].max())
+
+    st.sidebar.subheader('Select Max Year Built')
+    f_year_built = st.sidebar.slider('Year Built', min_year_built,
+                                    max_year_built,
+                                    max_year_built)
+    
+    # transform date attribute data type
+    data.date = pd.to_datetime(data.date).dt.strftime('%Y-%m-%d')
+    
+    min_date = datetime.strptime(data['date'].min(), '%Y-%m-%d')
+    max_date = datetime.strptime(data['date'].max(), '%Y-%m-%d')
+    
+    st.sidebar.subheader('Select Max Date')
+    f_date = st.sidebar.slider('Date', min_date,
+                                       max_date,
+                                       max_date)
+    
+    min_price = int(data['price'].min())
+    max_price = int(data['price'].max())
+    avg_price = int(data['price'].mean())
+    
+    st.sidebar.subheader('Select Max Price')
+    f_price = st.sidebar.slider('Price', min_price, max_price, max_price)
+    
+    st.sidebar.title('Attributes Options')
+    
+    f_bed = st.sidebar.selectbox('Max number of bedrooms',
+                                 sorted(set(data['bedrooms'].unique())),index=len(data['bedrooms'].unique())-2)
+    f_bath = st.sidebar.selectbox('Max number of bathrooms',
+                                 sorted(set(data['bathrooms'].unique())),index=len(data['bathrooms'].unique())-1)
+    f_floors = st.sidebar.selectbox('Max number of floors',
+                                 sorted(set(data['floors'].unique())),index=len(data['floors'].unique())-1)
+    f_water = st.sidebar.checkbox('With water view')
+    
+    st.sidebar.markdown('*For more information about Real Estate Investment Dashboard, please go to '
+            '[Additional Information](#additional-information) section by the end of this page.*')
+    
+    filters_dict = {'id':house_id,
+                    'zipcode':f_zipcode,
+                    'attributes':f_attributes,
+                    'yr_built':f_year_built,
+                    'date':f_date,
+                    'price':f_price,
+                    'bedrooms':f_bed,
+                    'bathrooms':f_bath,
+                    'floors':f_floors,
+                    'waterfront':f_water}
+    return filters_dict, f_order_column, f_ascending
 
 def dashboard_choice(status):
 
@@ -147,7 +209,9 @@ def macro_dashboard(path,url,option):
 
     # make a safe deep copy
     data_analysis = data.copy(deep=True)
-
+    
+    filters, f_order_column, f_ascending = set_macro_sidebar(data_analysis)
+    
     # Pre-Process
     data_analysis = pre_processing(data_analysis)
 
@@ -156,20 +220,20 @@ def macro_dashboard(path,url,option):
 
     # create price/m²
     data_analysis['price_m2'] = data_analysis['price']/data_analysis['house_total_m2']
-
+    
+    table_data = filter_data(data_analysis,filters,'table','macro')
     # Data Visualization
-    visualize_overview(data_analysis)
+    visualize_overview(table_data, f_order_column, f_ascending)
     statistics_view(data_analysis)
 
-    price_variation(data_analysis)
-    comercial_dist(data_analysis)
-    physical_attr_dist(data_analysis)
+    price_variation(data_analysis,filters['yr_built'],filters['date'])
+    comercial_dist(data_analysis,filters['price'])
+    physical_attr_dist(data_analysis,filters['bedrooms'],filters['bathrooms'],filters['floors'],filters['waterfront'])
 
-    st.title( 'Region Overview' )
-    c1, c2 = st.columns( ( 1, 1 ) )
-
-    density_map(data_analysis,geofile,c1)
-    cloropleth_map(data_analysis,geofile,c2,'price','PRICE')
+#     st.title( 'Region Overview' )
+#     c1, c2 = st.columns( ( 1, 1 ) )
+    
+#     portfolio_density(data_analysis,geofile,c1,'price','PRICE')
     
 
 def report_dashboard(path,url,option):
@@ -188,7 +252,7 @@ def report_dashboard(path,url,option):
     report_data = feature_engineering(report_data)
     
     # Set Report side bar
-    filters = set_sidebar(report_data)
+    filters = set_report_sidebar(report_data)
 
     # Report Overview
     report_overview(report_data)
@@ -296,36 +360,50 @@ def aux_filters_selection_mask(data,filters,report_element):
             
     return final_mask
 
-def filter_data(data,filters,report_element):
+def filter_data(data,filters,report_element,dashboard=''):
     
     filters_list = {key: filters[key] for key in filters if isinstance(filters[key],list)}
 
     mask = aux_filters_selection_mask(data,filters_list,report_element)
     
-    st.write("Original data:",data.shape[0])
-    data_filtered = data
-    house_id = filters_list['id']
-    f_attributes = filters_list['attributes']
-    if ((house_id != []) & (f_attributes != [])) & (report_element == 'table'):
-        data_filtered = data.loc[mask & data['id'].isin(house_id),f_attributes]
-    elif ((house_id == []) & (f_attributes != [])) & (report_element == 'table'):
-        data_filtered = data.loc[mask,f_attributes]
+    if dashboard == 'macro':
+        data_filtered = data
+        
+        house_id = filters_list['id']
+        f_attributes = filters_list['attributes']
+        if ((house_id != []) & (f_attributes != [])) & (report_element == 'table'):
+            data_filtered = data_filtered.loc[mask & data['id'].isin(house_id),f_attributes]
+        elif ((house_id == []) & (f_attributes != [])) & (report_element == 'table'):
+            data_filtered = data_filtered.loc[mask,f_attributes]
+        else:
+            data_filtered = data_filtered.loc[mask,:]
+        
+        if 'bedrooms' in data_filtered.columns:
+            data_filtered = data_filtered.loc[data_filtered.bedrooms < filters['bedrooms']]
+        if 'bathrooms' in data_filtered.columns:
+            data_filtered = data_filtered.loc[data_filtered.bathrooms < filters['bathrooms']]
+        if 'floors' in data_filtered.columns:
+            data_filtered = data_filtered.loc[data_filtered.floors < filters['floors']]
+        if 'waterfront' in data_filtered.columns:
+            data_filtered = data_filtered.loc[data_filtered.waterfront == filters['waterfront']]
+        if 'yr_built' in data_filtered.columns:
+            data_filtered = data_filtered.loc[data_filtered.yr_built < filters['yr_built']]
+        if 'price' in data_filtered.columns:
+            data_filtered = data_filtered.loc[data_filtered.price < filters['price']]
+        if 'date' in data_filtered.columns:
+            data_filtered = data_filtered.loc[data_filtered.date < filters['date']]
+        
     else:
-        data_filtered = data.loc[mask,:]
-    
-#     st.write("Filtered data:", data_filtered.shape[0])
-#     st.write(data_filtered.status.value_counts())
-    
-#     price_filter = filters['price']
-#     data_filtered = data_filtered.loc[data_filtered.price > price_filter]
-#     st.write(data_filtered.loc[data_filtered.status=='to compare'])
-    
-#     price_profit = filters['profit_est']
-#     data_filtered = data_filtered.loc[data_filtered.profit_est > price_profit]
-    
-#     st.write("Filtered data after price filter:", data_filtered.shape[0])
-#     st.write(data_filtered.status.value_counts())
-    
+        data_filtered = data
+        house_id = filters_list['id']
+        f_attributes = filters_list['attributes']
+        if ((house_id != []) & (f_attributes != [])) & (report_element == 'table'):
+            data_filtered = data.loc[mask & data['id'].isin(house_id),f_attributes]
+        elif ((house_id == []) & (f_attributes != [])) & (report_element == 'table'):
+            data_filtered = data.loc[mask,f_attributes]
+        else:
+            data_filtered = data.loc[mask,:]
+
     return data_filtered.reset_index(drop=True)
 
 
@@ -333,24 +411,14 @@ def filter_data(data,filters,report_element):
 # =============== TABLES FUNCTIONS =================
 # =================================================
 
-def visualize_overview(data):
-    
-    # filters
-    f_attributes = st.sidebar.multiselect('Enter columns', data.columns)
-    f_zipcode = st.sidebar.multiselect('Enter zipcode', data['zipcode'].unique())
+def visualize_overview(data, f_order_column, f_ascending):
 
     st.title('Data Overview')
-
-    if ((f_zipcode != []) & (f_attributes != [])):
-        data_overview = data.loc[data['zipcode'].isin(f_zipcode),f_attributes]
-    elif ((f_zipcode == []) & (f_attributes != [])):
-        data_overview = data.loc[:,f_attributes]
-    elif ((f_zipcode != []) & (f_attributes == [])):
-        data_overview = data.loc[data['zipcode'].isin(f_zipcode),:]
-    else:
-        data_overview = data
-
-    st.write(data_overview.head())
+    
+    ascending = False
+    if f_ascending:
+        ascending = True
+    st.write(data.sort_values(by=f_order_column,ascending=ascending))
 
     return None
 
@@ -447,7 +515,7 @@ def portfolio_density(data,geofile,st_col,agg_feature,agg_feature_name):
     marker_cluster = MarkerCluster().add_to(density_map)
     for name, row in df.iterrows():
         folium.Marker([row['lat'], row['long']],
-                      popup='Sold R${0} on: {1}. Features: {2}, {3} bedrooms, {4} bathrooms, year built: {5}'.format(
+                      popup='Sold R${0} on: {1}. Features: {2} m2_living, {3} bedrooms, {4} bathrooms, year built: {5}'.format(
                           row['price'],
                           row['date'],
                           row['m2_living'],
@@ -559,8 +627,11 @@ def renovation_histograms(house_df: pd.DataFrame):
         plots a set of histograms
     ''' 
     
-    zipcode = st.sidebar.selectbox('Enter the zipcode to check renovation proposals:',house_df.zipcode.unique())
     unique_zipcodes = np.sort(house_df['zipcode'].unique())
+    zipcode = st.sidebar.selectbox('Enter the zipcode to check renovation proposals:',unique_zipcodes)
+    
+    st.sidebar.markdown('*For more information about this report, please go to '
+            '[Additional Information](#additional-information) section by the end of this page.*')
     
     if zipcode in unique_zipcodes:
         
@@ -603,15 +674,7 @@ def renovation_histograms(house_df: pd.DataFrame):
         
 
 
-def price_variation(data):
-    # filters
-    min_year_built = int(data['yr_built'].min())
-    max_year_built = int(data['yr_built'].max())
-
-    st.sidebar.subheader('Select Max Year Built')
-    f_year_built = st.sidebar.slider('Year Built', min_year_built,
-                                    max_year_built,
-                                    min_year_built)
+def price_variation(data,f_year_built,f_date):
 
     st.header('Average Price per Year built')
 
@@ -627,18 +690,6 @@ def price_variation(data):
     ### Price Variation per Day
 
     st.header('Average Price per Day')
-    st.sidebar.subheader('Select Max Date')
-
-    # transform date attribute data type
-    data.date = pd.to_datetime(data.date).dt.strftime('%Y-%m-%d')
-
-    # filters
-    min_date = datetime.strptime(data['date'].min(), '%Y-%m-%d')
-    max_date = datetime.strptime(data['date'].max(), '%Y-%m-%d')
-
-    f_date = st.sidebar.slider('Date', min_date,
-                                       max_date,
-                                       min_date)
 
     data.date = pd.to_datetime(data.date)
 
@@ -653,17 +704,10 @@ def price_variation(data):
     return None
 
 
-def comercial_dist(data):
+def comercial_dist(data,f_price):
 
     st.header('Price Distribution')
-    st.sidebar.subheader('Select Max Price')
 
-    #filter
-    min_price = int(data['price'].min())
-    max_price = int(data['price'].max())
-    avg_price = int(data['price'].mean())
-
-    f_price = st.sidebar.slider('Price', min_price, max_price, avg_price)
     df = data.loc[data['price'] < f_price]
 
     # data plot
@@ -673,19 +717,9 @@ def comercial_dist(data):
     return None
 
 
-def physical_attr_dist(data):
+def physical_attr_dist(data,f_bed,f_bath,f_floors,f_water):
 
-    st.sidebar.title('Attributes Options')
     st.title('Houses Distribution')
-
-    #filters
-    f_bed = st.sidebar.selectbox('Max number of bedrooms',
-                                 sorted(set(data['bedrooms'].unique())))
-    f_bath = st.sidebar.selectbox('Max number of bathrooms',
-                                 sorted(set(data['bathrooms'].unique())))
-    f_floors = st.sidebar.selectbox('Max number of floors',
-                                 sorted(set(data['floors'].unique())))
-    f_water = st.sidebar.checkbox('With water view')
 
     c1, c2 = st.columns(2)
 
