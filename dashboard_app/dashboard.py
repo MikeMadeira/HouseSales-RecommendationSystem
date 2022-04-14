@@ -96,32 +96,30 @@ def set_sidebar(data):
     
     # filters
     invest_opt = st.sidebar.multiselect('Investment Option', data.status.unique(), default=['to buy'])
-    house_id = st.sidebar.multiselect('House Id', data.id)
-    f_zipcode = st.sidebar.multiselect('Enter zipcode', data['zipcode'].unique())
+    house_id = st.sidebar.multiselect('House Id', np.sort(data.id.unique()))
+    f_zipcode = st.sidebar.multiselect('Enter zipcode', np.sort(data['zipcode'].unique()))
     f_attributes = st.sidebar.multiselect('Enter columns', data.columns, default=['id','zipcode','price','selling_price','profit_est','best_season_selling_price','best_season_profit_est','status'])
     f_living_size = st.sidebar.multiselect('Living Size', data.living_size.unique())
     f_lot_size = st.sidebar.multiselect('Lot Size', data.lot_size.unique())
     min_price = int(data.price.min())
     max_price = int(data.price.max())
-    st.sidebar.subheader('Select Max Price')
-    f_price = st.sidebar.slider('Price', min_price,
-                                              max_price,
-                                              min_price)
-    min_profit = int(data.profit_est.min())
-    max_profit = int(data.profit_est.max())
-    st.sidebar.subheader('Select Min Profit')
-    f_profit = st.sidebar.slider('Profit', min_profit,
-                                           max_profit,
-                                           min_profit)
+#     st.sidebar.subheader('Select Min Price')
+#     f_price = st.sidebar.slider('Price', min_price,
+#                                               max_price,
+#                                               min_price)
+#     min_profit = int(data.profit_est.min())
+#     max_profit = int(data.profit_est.max())
+#     st.sidebar.subheader('Select Min Profit')
+#     f_profit = st.sidebar.slider('Profit', min_profit,
+#                                            max_profit,
+#                                            min_profit)
 
     filters_dict = {'status':invest_opt,
                     'id':house_id,
                     'zipcode':f_zipcode,
                     'attributes':f_attributes,
                     'living_size':f_living_size,
-                    'lot_size':f_lot_size,
-                    'price':f_price,
-                    'profit_est':f_profit}
+                    'lot_size':f_lot_size}#,'price':f_price,'profit_est':f_profit}
     return filters_dict
 
 def dashboard_choice(status):
@@ -188,29 +186,29 @@ def report_dashboard(path,url,option):
 
     # Feature Engineering
     report_data = feature_engineering(report_data)
-
+    
     # Set Report side bar
     filters = set_sidebar(report_data)
 
+    # Report Overview
+    report_overview(report_data)
+
     # Filter Data to report table
     report_table_data = filter_data(report_data,filters,'table')
-
-    # Report Overview
-    st.write(report_table_data.shape)
-    report_overview(report_table_data)
-
+    
     st.markdown('---')
     # Data Visualization
     visualize_report_table(report_table_data)
 
     # Filter Data to report maps
     report_maps_data = filter_data(report_data,filters,'maps')
-    st.write(report_maps_data.shape)
     st.markdown('---')
     st.title( 'Region Overview' )
-    c1, c2 = st.columns( ( 1, 1 ) )
-    density_map(report_maps_data,geofile,c1)
-    cloropleth_map(report_maps_data,geofile,c2,'profit_est','PROFIT')
+    c1, c2 = st.columns([2,2])
+    portfolio_density(report_maps_data,geofile,c1,'profit_est','PROFIT')
+    top_houses_per_profit(report_data,c2)
+#     density_map(report_maps_data,geofile,c1)
+#     cloropleth_map(report_maps_data,geofile,c2,'profit_est','PROFIT')
 
     st.markdown('---')
     st.title( 'Proposals for Renewals' )
@@ -221,7 +219,6 @@ def report_dashboard(path,url,option):
 # =============== DATA AND FILES FUNCTIONS =========
 # =================================================   
 
-@st.cache(suppress_st_warning=True) 
 @st.cache(allow_output_mutation=True)
 def get_data(path, option):
     data = pd.read_csv(path)
@@ -285,12 +282,14 @@ def data_size_choice():
 
     return option
 
-def aux_filters_selection_mask(data,filters):
+def aux_filters_selection_mask(data,filters,report_element):
     
     empty_filter_mask = [True]*data.shape[0]
     final_mask = empty_filter_mask
     for feature in filters:
-        if (filters[feature] != []) & (feature != 'attributes'):
+        if (filters[feature] != []) & (feature != 'attributes') & (report_element == 'table'):
+            final_mask = np.logical_and(final_mask, data[feature].isin(filters[feature]))
+        elif (filters[feature] != []) & (feature != 'attributes') & (feature != 'id') & (report_element != 'table'):
             final_mask = np.logical_and(final_mask, data[feature].isin(filters[feature]))
         else:
             final_mask = np.logical_and(final_mask, empty_filter_mask)
@@ -301,31 +300,35 @@ def filter_data(data,filters,report_element):
     
     filters_list = {key: filters[key] for key in filters if isinstance(filters[key],list)}
 
-    mask = aux_filters_selection_mask(data,filters_list)
+    mask = aux_filters_selection_mask(data,filters_list,report_element)
     
+    st.write("Original data:",data.shape[0])
     data_filtered = data
     house_id = filters_list['id']
     f_attributes = filters_list['attributes']
     if ((house_id != []) & (f_attributes != [])) & (report_element == 'table'):
         data_filtered = data.loc[mask & data['id'].isin(house_id),f_attributes]
-    elif ((house_id != []) & (f_attributes != [])) & (report_element != 'table'):
-        data_filtered = data.loc[mask & data['id'].isin(house_id),:]
     elif ((house_id == []) & (f_attributes != [])) & (report_element == 'table'):
         data_filtered = data.loc[mask,f_attributes]
-    elif ((house_id == []) & (f_attributes != [])) & (report_element != 'table'):
-        data_filtered = data.loc[mask,:]
-    elif ((house_id != []) & (f_attributes == [])):
-        data_filtered = data.loc[mask & data['id'].isin(house_id),:]
     else:
         data_filtered = data.loc[mask,:]
-        
-    price_filter = filters['price']
-    data_filtered = data_filtered.loc[data_filtered.price > price_filter]
     
-    price_profit = filters['profit_est']
-    data_filtered = data_filtered.loc[data_filtered.profit_est > price_profit]
+#     st.write("Filtered data:", data_filtered.shape[0])
+#     st.write(data_filtered.status.value_counts())
     
-    return data_filtered
+#     price_filter = filters['price']
+#     data_filtered = data_filtered.loc[data_filtered.price > price_filter]
+#     st.write(data_filtered.loc[data_filtered.status=='to compare'])
+    
+#     price_profit = filters['profit_est']
+#     data_filtered = data_filtered.loc[data_filtered.profit_est > price_profit]
+    
+#     st.write("Filtered data after price filter:", data_filtered.shape[0])
+#     st.write(data_filtered.status.value_counts())
+    
+    return data_filtered.reset_index(drop=True)
+
+
 # =================================================
 # =============== TABLES FUNCTIONS =================
 # =================================================
@@ -431,6 +434,58 @@ def statistics_view(data):
 
     return None
 
+def portfolio_density(data,geofile,st_col,agg_feature,agg_feature_name):
+    
+    st_col.subheader( 'Recommended Houses Density Map' )
+    
+    df = data#.sample( 10 )
+
+    # Base Map - Folium
+    density_map = folium.Map(location=[data['lat'].mean(),
+                              data['long'].mean() ],
+                              default_zoom_start=15)
+    marker_cluster = MarkerCluster().add_to(density_map)
+    for name, row in df.iterrows():
+        folium.Marker([row['lat'], row['long']],
+                      popup='Sold R${0} on: {1}. Features: {2}, {3} bedrooms, {4} bathrooms, year built: {5}'.format(
+                          row['price'],
+                          row['date'],
+                          row['m2_living'],
+                          row['bedrooms'],
+                          row['bathrooms'],
+                          row['yr_built']
+                      )).add_to(marker_cluster)
+        
+        
+    df = data[[agg_feature, 'zipcode']].groupby('zipcode').mean().reset_index()
+    df.columns = ['ZIP', agg_feature_name]
+
+    df = df#.sample(10)
+
+    geofile = geofile[geofile['ZIP'].isin(df['ZIP'].tolist())]
+
+    folium.features.Choropleth(data=df,
+                               geo_data=geofile,
+                               columns=['ZIP', agg_feature_name],
+                               key_on='feature.properties.ZIP',
+                               fill_color='YlOrRd',
+                               fill_opacity=0.7,
+                               line_opacity=0.2,
+                               legend_name='AVG '+agg_feature_name).add_to(density_map)
+    
+    with st_col:
+        folium_static(density_map)
+
+def top_houses_per_profit(data,st_col):
+    
+    columns = ['id','zipcode','price','selling_price','profit_est','best_season_selling_price','best_season_profit_est']
+    with st_col:
+        
+        st.subheader('Top 10 Houses')
+        st.write('With selling price suggestion increased based on:')
+        st.write('Invested value above region median price value, house condition above 3 and best season to sell')
+        st.write(data.loc[data.status=='to buy',columns].sort_values(by='best_season_profit_est',ascending=False).reset_index(drop=True).head(10))
+    
 def density_map(data,geofile,st_col):
     
     st_col.header( 'Recommended Houses Density Map' )
@@ -505,7 +560,7 @@ def renovation_histograms(house_df: pd.DataFrame):
     ''' 
     
     zipcode = st.sidebar.selectbox('Enter the zipcode to check renovation proposals:',house_df.zipcode.unique())
-    unique_zipcodes = house_df['zipcode'].unique()
+    unique_zipcodes = np.sort(house_df['zipcode'].unique())
     
     if zipcode in unique_zipcodes:
         
@@ -534,7 +589,7 @@ def renovation_histograms(house_df: pd.DataFrame):
         houses_to_buy_grouped['property_size'] = houses_to_buy_grouped['living_size']+'_'+houses_to_buy_grouped['lot_size']
         houses_to_buy_grouped.plot.bar(x='property_size',y=['houses_to_buy_bedrooms','houses_to_buy_bathrooms'],ax=ax,color=['lightblue','orange'])
         
-        c1, c2 = st.columns( ( 2, 4 ) )
+        c1, c2, c3 = st.columns([2,1,2])
         
         with c1:
             st.pyplot(fig)
