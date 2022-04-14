@@ -186,7 +186,10 @@ def set_macro_sidebar(data):
 
 def dashboard_choice(status):
 
-    st.write("Feel free to change between dashboards:")
+    st.write('If it is taking too long for the page to load, '
+                        'please select a smaller database size above')
+    
+    st.markdown("**Feel free to change between dashboards:**")
     
     f_dashboard = st.selectbox('Choose Dashboard',['','Macro Dashboard','Report Dashboard'])
     if status == 'initial_page':
@@ -194,7 +197,7 @@ def dashboard_choice(status):
             status = 'macro_analysis'
         if f_dashboard == 'Report Dashboard':
             status = 'report_analysis'
-            
+    
     return status
 
 # =================================================
@@ -287,10 +290,6 @@ def report_dashboard(path,url,option):
 def get_data(path, option):
     data = pd.read_csv(path)
     
-    st.write('The complete database has', data.shape[0], 'records. '
-                 'If it is taking too long for the page to load, '
-                        'please select a smaller database size below')
-    
     # selection of data sample
     data_25 = data.sample(math.floor(data.shape[0]*0.25))
     data_50 = data.sample(math.floor(data.shape[0]*0.5))
@@ -309,7 +308,6 @@ def get_data(path, option):
         data_reduced = data_75
     elif option == '100% of data':
         data_reduced = data_100
-        st.warning('Please, note that choosing this option may slow down the report loading.')
             
     with st.spinner('Please wait...'):
         time.sleep(1)
@@ -333,11 +331,11 @@ def data_size_choice():
         if option == '':
             st.error('Choose database size on the list above to load the report')
         elif option == '25% of data':
-            st.write('You have chosen 25% random records of the database')
+            st.write('You have chosen 25% of the records')
         elif option == '50% of data':
-            st.write('You have chosen 50% random records of the database')
+            st.write('You have chosen 50% of the records')
         elif option == '75% of data':
-            st.write('You have chosen 75% random records of the database')
+            st.write('You have chosen 75% of the records')
         elif option == '100% of data':
             st.write('You have chosen the full database')
             st.warning('Please, note that choosing this option may slow down the report loading.')
@@ -446,7 +444,7 @@ def report_overview(data):
             st.header('Business Questions:')
             st.write('**1. Which houses should be bought and for what price?**')
             st.write('**2. Once its bought when it''s the best time period to sell it and for what price?**')
-            st.write('**3. To rise the housing selling price, the company should do a renovation. So what would be good renewal changes?**')
+            st.write('**3. To rise the housing selling price, the company should do renewal works. So what would be good renewal changes?**')
             st.write('')
             st.subheader('Total properties on selected dataset: {:,}'.format(data.shape[0]))
             st.subheader('Total properties suggested to be purchased: {:,}'.format(data.loc[data.status == 'to buy'].shape[0]))
