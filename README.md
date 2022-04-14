@@ -2,7 +2,7 @@
 
 <img src="images/real_estate_project_2.jpg" style="width:850px ; height:600px">
 
-This project is a recommendation system for Real Estate companies based on insights extracted from exploratory data analysis, to answer to real estate common business questions. The rationale and the development can be followed on my jupyter [Notebook](houses_recommendations.ipynb) and also visualize dashboards on a more centralized and interactive way through my [Real Estate Recommendation Report App](https://house-rocket-visualization.herokuapp.com/). 
+This project is a recommendation system for Real Estate companies based on insights extracted from exploratory data analysis, to answer to real estate common business questions. The rationale and the development can be followed on my jupyter [Notebook](houses_recommendations.ipynb) and also visualize dashboards on a more centralized and interactive way through my [Real Estate Recommendation Report App](https://real-estate-analytical-app.herokuapp.com/). 
 
 The analysis was done over some data of sold houses from King County, in Seattle, USA. The data was obtained from [Kaggle](https://www.kaggle.com/harlfoxem/housesalesprediction).
 
@@ -249,7 +249,7 @@ This project is a Data Analysis which was tailored to find actionable insights a
 From the profits I can conclude that there is margin of investment within King County.
 
 To make the report easy and interactive I built an app to run on a cloud application, which can accessed by clicking on
-[Real Estate Recommendation Report App](https://house-rocket-visualization.herokuapp.com/). Additionally it can be found some dashboards with interactive visualization graphs and maps. 
+[Real Estate Recommendation Report App](https://real-estate-analytical-app.herokuapp.com/). Additionally it can be found some dashboards with interactive visualization graphs and maps. 
     
 ---    
 ## 7. **Next actionable steps**
